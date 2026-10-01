@@ -5,6 +5,7 @@ import PlaceholderScreen from "../screens/PlaceholderScreen";
 import { BottomTabParamList } from "./types";
 import HomeScreen from "../screens/home/HomeScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
+import BookSearchScreen from "../screens/books/BookSearchScreen";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 

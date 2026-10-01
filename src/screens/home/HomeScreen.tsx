@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useEffect,
   useState,
 } from "react";
 
@@ -14,12 +13,12 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -48,10 +47,9 @@ export default function HomeScreen({
   navigation,
 }: Props) {
   const [profile, setProfile] =
-    useState<ProfileData | null>(null);
-
-  const [searchText, setSearchText] =
-    useState("");
+    useState<ProfileData | null>(
+      null
+    );
 
   const [
     unreadNotifications,
@@ -73,13 +71,14 @@ export default function HomeScreen({
   // LOAD PROFILE + NOTIFICATION COUNT
   // =====================================================
 
-  const loadHomeData = useCallback(
-    async () => {
+  const loadHomeData =
+    useCallback(async () => {
       try {
         const {
           data: { user },
           error: userError,
-        } = await supabase.auth.getUser();
+        } =
+          await supabase.auth.getUser();
 
         if (userError) {
           throw userError;
@@ -90,6 +89,7 @@ export default function HomeScreen({
             "Session Error",
             "Please login again."
           );
+
           return;
         }
 
@@ -148,13 +148,16 @@ export default function HomeScreen({
         setLoading(false);
         setRefreshing(false);
       }
-    },
-    []
-  );
+    }, []);
 
-  useEffect(() => {
-    loadHomeData();
-  }, [loadHomeData]);
+  // Refresh every time Home becomes active.
+  // This also refreshes profile image/name
+  // after Edit Profile.
+  useFocusEffect(
+    useCallback(() => {
+      loadHomeData();
+    }, [loadHomeData])
+  );
 
   // =====================================================
   // GREETING
@@ -176,34 +179,18 @@ export default function HomeScreen({
   };
 
   // =====================================================
-  // SEARCH
-  // =====================================================
-
-  const handleSearch = () => {
-    const query =
-      searchText.trim();
-
-    if (!query) {
-      return;
-    }
-
-    rootNavigation?.navigate(
-      "SearchResults",
-      {
-        query,
-      }
-    );
-  };
-
-  // =====================================================
-  // NAVIGATION
+  // YOUR BOOK SEARCH SCREEN
   // =====================================================
 
   const openSearchBooks = () => {
-    rootNavigation?.navigate(
-      "BookCatalogue"
-    );
-  };
+  rootNavigation?.navigate(
+    "BookSearch"
+  );
+};
+
+  // =====================================================
+  // OTHER NAVIGATION
+  // =====================================================
 
   const openSeatBooking = () => {
     rootNavigation?.navigate(
@@ -236,9 +223,7 @@ export default function HomeScreen({
   };
 
   const openProfile = () => {
-    navigation.navigate(
-      "Profile"
-    );
+    navigation.navigate("Profile");
   };
 
   const handleRefresh = () => {
@@ -276,7 +261,9 @@ export default function HomeScreen({
   // =====================================================
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+    >
       <StatusBar
         barStyle="light-content"
         backgroundColor={
@@ -295,7 +282,9 @@ export default function HomeScreen({
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleRefresh}
+            onRefresh={
+              handleRefresh
+            }
             tintColor={
               COLORS.primary
             }
@@ -312,7 +301,7 @@ export default function HomeScreen({
               styles.headerTopRow
             }
           >
-            {/* PROFILE + NAME */}
+            {/* PROFILE */}
 
             <TouchableOpacity
               style={
@@ -373,7 +362,7 @@ export default function HomeScreen({
               </View>
             </TouchableOpacity>
 
-            {/* NOTIFICATION ICON */}
+            {/* NOTIFICATIONS */}
 
             <TouchableOpacity
               style={
@@ -414,12 +403,20 @@ export default function HomeScreen({
             </TouchableOpacity>
           </View>
 
-          {/* SEARCH BAR */}
+          {/* =================================================
+              HOME SEARCH BAR
 
-          <View
+              IMPORTANT:
+              This does NOT search directly.
+              It opens YOUR Search Books screen.
+          ================================================= */}
+
+          <TouchableOpacity
             style={
               styles.searchContainer
             }
+            onPress={openSearchBooks}
+            activeOpacity={0.9}
           >
             <Ionicons
               name="search-outline"
@@ -427,22 +424,15 @@ export default function HomeScreen({
               color="#8390A5"
             />
 
-            <TextInput
-              value={searchText}
-              onChangeText={
-                setSearchText
-              }
-              placeholder="Search for books, authors, or topics..."
-              placeholderTextColor="#8E99AB"
+            <Text
               style={
-                styles.searchInput
+                styles.searchPlaceholder
               }
-              returnKeyType="search"
-              onSubmitEditing={
-                handleSearch
-              }
-            />
-          </View>
+            >
+              Search for books,
+              authors, or topics...
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* =================================================
@@ -450,12 +440,8 @@ export default function HomeScreen({
         ================================================= */}
 
         <View style={styles.content}>
-          {/* TOP ACTION CARDS */}
-
           <View
-            style={
-              styles.actionRow
-            }
+            style={styles.actionRow}
           >
             {/* SEARCH BOOKS */}
 
@@ -624,9 +610,7 @@ function HomeMenuItem({
         }
       >
         <Text
-          style={
-            styles.menuTitle
-          }
+          style={styles.menuTitle}
         >
           {title}
         </Text>
@@ -653,319 +637,302 @@ function HomeMenuItem({
 // STYLES
 // =========================================================
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor:
-      COLORS.primary,
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor:
-      COLORS.background,
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    backgroundColor:
-      COLORS.background,
-  },
-
-  // =====================================================
-  // LOADING
-  // =====================================================
-
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor:
-      COLORS.background,
-  },
-
-  loadingText: {
-    marginTop: 12,
-    fontSize: 13,
-    color:
-      COLORS.textSecondary,
-  },
-
-  // =====================================================
-  // HEADER
-  // =====================================================
-
-  header: {
-    backgroundColor:
-      COLORS.primary,
-
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 18,
-  },
-
-  headerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent:
-      "space-between",
-    marginBottom: 20,
-  },
-
-  profileSection: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  profileImage: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-
-    borderWidth: 2,
-    borderColor:
-      COLORS.white,
-  },
-
-  profilePlaceholder: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-
-    backgroundColor:
-      COLORS.white,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    borderWidth: 2,
-    borderColor: "#E6EDF7",
-  },
-
-  greetingContainer: {
-    marginLeft: 10,
-    flex: 1,
-  },
-
-  greetingText: {
-    fontSize: 11,
-    color: "#E7EEFA",
-    marginBottom: 2,
-  },
-
-  userName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color:
-      COLORS.white,
-  },
+const styles =
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor:
+        COLORS.primary,
+    },
+
+    container: {
+      flex: 1,
+      backgroundColor:
+        COLORS.background,
+    },
+
+    scrollContent: {
+      flexGrow: 1,
+      backgroundColor:
+        COLORS.background,
+    },
+
+    // LOADING
+
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor:
+        COLORS.background,
+    },
+
+    loadingText: {
+      marginTop: 12,
+      fontSize: 13,
+      color:
+        COLORS.textSecondary,
+    },
+
+    // HEADER
+
+    header: {
+      backgroundColor:
+        COLORS.primary,
+
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 18,
+    },
+
+    headerTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+
+      marginBottom: 20,
+    },
+
+    profileSection: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    profileImage: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+
+      borderWidth: 2,
+      borderColor:
+        COLORS.white,
+    },
 
-  // =====================================================
-  // NOTIFICATION
-  // =====================================================
+    profilePlaceholder: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
 
-  notificationButton: {
-    width: 39,
-    height: 39,
+      backgroundColor:
+        COLORS.white,
 
-    borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
 
-    backgroundColor:
-      COLORS.white,
+      borderWidth: 2,
+      borderColor: "#E6EDF7",
+    },
 
-    alignItems: "center",
-    justifyContent: "center",
+    greetingContainer: {
+      marginLeft: 10,
+      flex: 1,
+    },
 
-    position: "relative",
-  },
+    greetingText: {
+      fontSize: 11,
+      color: "#E7EEFA",
+      marginBottom: 2,
+    },
 
-  notificationBadge: {
-    position: "absolute",
+    userName: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: COLORS.white,
+    },
 
-    top: -5,
-    right: -4,
+    // NOTIFICATION
 
-    minWidth: 17,
-    height: 17,
+    notificationButton: {
+      width: 39,
+      height: 39,
 
-    borderRadius: 9,
+      borderRadius: 20,
 
-    paddingHorizontal: 4,
+      backgroundColor:
+        COLORS.white,
 
-    backgroundColor:
-      COLORS.secondary,
+      alignItems: "center",
+      justifyContent: "center",
 
-    alignItems: "center",
-    justifyContent: "center",
+      position: "relative",
+    },
 
-    borderWidth: 1.5,
-    borderColor:
-      COLORS.white,
-  },
+    notificationBadge: {
+      position: "absolute",
 
-  notificationBadgeText: {
-    color:
-      COLORS.white,
+      top: -5,
+      right: -4,
 
-    fontSize: 9,
-    fontWeight: "700",
-  },
+      minWidth: 17,
+      height: 17,
 
-  // =====================================================
-  // SEARCH
-  // =====================================================
+      borderRadius: 9,
 
-  searchContainer: {
-    height: 50,
+      paddingHorizontal: 4,
 
-    flexDirection: "row",
-    alignItems: "center",
+      backgroundColor:
+        COLORS.secondary,
 
-    backgroundColor:
-      COLORS.white,
+      alignItems: "center",
+      justifyContent: "center",
 
-    borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor:
+        COLORS.white,
+    },
 
-    paddingHorizontal: 14,
-  },
+    notificationBadgeText: {
+      color: COLORS.white,
+      fontSize: 9,
+      fontWeight: "700",
+    },
 
-  searchInput: {
-    flex: 1,
+    // SEARCH
 
-    marginLeft: 9,
+    searchContainer: {
+      height: 50,
 
-    fontSize: 12,
+      flexDirection: "row",
+      alignItems: "center",
 
-    color:
-      COLORS.textPrimary,
-  },
+      backgroundColor:
+        COLORS.white,
 
-  // =====================================================
-  // CONTENT
-  // =====================================================
+      borderRadius: 10,
 
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 35,
-  },
+      paddingHorizontal: 14,
+    },
 
-  // =====================================================
-  // ACTION CARDS
-  // =====================================================
+    searchPlaceholder: {
+      flex: 1,
 
-  actionRow: {
-    flexDirection: "row",
-    justifyContent:
-      "space-between",
+      marginLeft: 9,
 
-    marginBottom: 22,
-  },
+      fontSize: 12,
 
-  actionCard: {
-    width: "48%",
+      color: "#8E99AB",
+    },
 
-    height: 125,
+    // CONTENT
 
-    borderRadius: 14,
+    content: {
+      paddingHorizontal: 20,
+      paddingTop: 15,
+      paddingBottom: 35,
+    },
 
-    alignItems: "center",
-    justifyContent: "center",
+    // ACTION CARDS
 
-    paddingHorizontal: 10,
-  },
+    actionRow: {
+      flexDirection: "row",
+      justifyContent:
+        "space-between",
 
-  searchCard: {
-    backgroundColor:
-      "#0B67D1",
-  },
+      marginBottom: 22,
+    },
 
-  reserveCard: {
-    backgroundColor:
-      COLORS.secondary,
-  },
+    actionCard: {
+      width: "48%",
 
-  actionImage: {
-    width: 65,
-    height: 65,
+      height: 125,
 
-    marginBottom: 8,
-  },
+      borderRadius: 14,
 
-  actionCardText: {
-    color:
-      COLORS.white,
+      alignItems: "center",
+      justifyContent: "center",
 
-    fontSize: 14,
-    fontWeight: "700",
-  },
+      paddingHorizontal: 10,
+    },
 
-  // =====================================================
-  // MENU
-  // =====================================================
+    searchCard: {
+      backgroundColor:
+        "#0B67D1",
+    },
 
-  menuContainer: {
-    width: "100%",
-  },
+    reserveCard: {
+      backgroundColor:
+        COLORS.secondary,
+    },
 
-  menuItem: {
-    minHeight: 63,
+    actionImage: {
+      width: 65,
+      height: 65,
 
-    flexDirection: "row",
-    alignItems: "center",
+      marginBottom: 8,
+    },
 
-    backgroundColor:
-      COLORS.white,
+    actionCardText: {
+      color: COLORS.white,
 
-    borderWidth: 1,
-    borderColor:
-      "#D9E3F0",
+      fontSize: 14,
+      fontWeight: "700",
+    },
 
-    borderRadius: 10,
+    // MENU
 
-    paddingHorizontal: 12,
+    menuContainer: {
+      width: "100%",
+    },
 
-    marginBottom: 9,
-  },
+    menuItem: {
+      minHeight: 63,
 
-  lastMenuItem: {
-    marginBottom: 0,
-  },
+      flexDirection: "row",
+      alignItems: "center",
 
-  menuIconContainer: {
-    width: 36,
-    height: 36,
+      backgroundColor:
+        COLORS.white,
 
-    borderRadius: 18,
+      borderWidth: 1,
+      borderColor:
+        "#D9E3F0",
 
-    backgroundColor:
-      "#EFF5FC",
+      borderRadius: 10,
 
-    alignItems: "center",
-    justifyContent: "center",
+      paddingHorizontal: 12,
 
-    marginRight: 11,
-  },
+      marginBottom: 9,
+    },
 
-  menuTextContainer: {
-    flex: 1,
-  },
+    lastMenuItem: {
+      marginBottom: 0,
+    },
 
-  menuTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+    menuIconContainer: {
+      width: 36,
+      height: 36,
 
-    color:
-      COLORS.primary,
+      borderRadius: 18,
 
-    marginBottom: 3,
-  },
+      backgroundColor:
+        "#EFF5FC",
 
-  menuSubtitle: {
-    fontSize: 10,
+      alignItems: "center",
+      justifyContent: "center",
 
-    color:
-      COLORS.textSecondary,
-  },
-});
+      marginRight: 11,
+    },
+
+    menuTextContainer: {
+      flex: 1,
+    },
+
+    menuTitle: {
+      fontSize: 13,
+      fontWeight: "700",
+
+      color:
+        COLORS.primary,
+
+      marginBottom: 3,
+    },
+
+    menuSubtitle: {
+      fontSize: 10,
+
+      color:
+        COLORS.textSecondary,
+    },
+  });

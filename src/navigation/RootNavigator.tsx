@@ -3,9 +3,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
+
+// =========================================================
+// MEMBER 1 - CORE ACCESS
+// =========================================================
+
 import LoginScreen from "../screens/auth/LoginScreen";
-import AccountSettingsScreen
-  from "../screens/profile/AccountSettingsScreen";
+import AccountSettingsScreen from "../screens/profile/AccountSettingsScreen";
+import BookSearchScreen from "../screens/books/BookSearchScreen";
+import RecentSearchesScreen from "../screens/books/RecentSearchesScreen";
 
 import { RootStackParamList } from "./types";
 
@@ -20,7 +26,9 @@ export default function RootNavigator() {
         headerShown: false,
       }}
     >
-      {/*MEMBER 1 - CORE ACCESS*/}
+      {/* =================================================
+          MEMBER 1 - CORE ACCESS
+      ================================================= */}
 
       <Stack.Screen
         name="Login"
@@ -32,115 +40,153 @@ export default function RootNavigator() {
         component={BottomTabNavigator}
       />
 
-      <Stack.Screen name="RecentSearches">
-        {() => (
-          <PlaceholderScreen title="Recent Searches" />
-        )}
-      </Stack.Screen>
-
+      {/* YOUR BOOK SEARCH SCREEN */}
       <Stack.Screen
-        name="AccountSettings"
-        component={
-          AccountSettingsScreen
-        }
+        name="BookSearch"
+        component={BookSearchScreen}
       />
 
+      {/* YOUR RECENT SEARCHES SCREEN */}
+      <Stack.Screen
+        name="RecentSearches"
+        component={RecentSearchesScreen}
+      />
 
-      {/*MEMBER 2 - BOOKS*/}
+      {/* YOUR EDIT PROFILE / ACCOUNT SETTINGS */}
+      <Stack.Screen
+        name="AccountSettings"
+        component={AccountSettingsScreen}
+      />
+
+      {/* =================================================
+          MEMBER 2 - BOOKS
+      ================================================= */}
 
       <Stack.Screen name="BookCatalogue">
         {() => (
-          <PlaceholderScreen title="Book Catalogue" />
+          <PlaceholderScreen
+            title="Book Catalogue"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="SearchResults">
         {() => (
-          <PlaceholderScreen title="Search Results" />
+          <PlaceholderScreen
+            title="Search Results"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BookDetails">
         {() => (
-          <PlaceholderScreen title="Book Details" />
+          <PlaceholderScreen
+            title="Book Details"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BorrowedBookDetails">
         {() => (
-          <PlaceholderScreen title="Borrowed Book Details" />
+          <PlaceholderScreen
+            title="Borrowed Book Details"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="ReservationConfirmation">
         {() => (
-          <PlaceholderScreen title="Reservation Confirmation" />
+          <PlaceholderScreen
+            title="Reservation Confirmation"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="QueueConfirmation">
         {() => (
-          <PlaceholderScreen title="Queue Confirmation" />
+          <PlaceholderScreen
+            title="Queue Confirmation"
+          />
         )}
       </Stack.Screen>
 
-
-      {/*MEMBER 3 - STUDY SPACES*/}
+      {/* =================================================
+          MEMBER 3 - STUDY SPACES
+      ================================================= */}
 
       <Stack.Screen name="SpaceReservation">
         {() => (
-          <PlaceholderScreen title="Space Reservation" />
+          <PlaceholderScreen
+            title="Space Reservation"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="StudyRooms">
         {() => (
-          <PlaceholderScreen title="Study Rooms" />
+          <PlaceholderScreen
+            title="Study Rooms"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BookStudyRoom">
         {() => (
-          <PlaceholderScreen title="Book Study Room" />
+          <PlaceholderScreen
+            title="Book Study Room"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BookingConfirmation">
         {() => (
-          <PlaceholderScreen title="Booking Confirmation" />
+          <PlaceholderScreen
+            title="Booking Confirmation"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BookingDetails">
         {() => (
-          <PlaceholderScreen title="Booking Details" />
+          <PlaceholderScreen
+            title="Booking Details"
+          />
         )}
       </Stack.Screen>
 
-
-      {/*MEMBER 4 - ACTIVITY*/}
+      {/* =================================================
+          MEMBER 4 - ACTIVITY
+      ================================================= */}
 
       <Stack.Screen name="MyBookReservations">
         {() => (
-          <PlaceholderScreen title="My Book Reservations" />
+          <PlaceholderScreen
+            title="My Book Reservations"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="MyStudyRoomBookings">
         {() => (
-          <PlaceholderScreen title="My Study Room Bookings" />
+          <PlaceholderScreen
+            title="My Study Room Bookings"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="BorrowedBooks">
         {() => (
-          <PlaceholderScreen title="Borrowed Books" />
+          <PlaceholderScreen
+            title="Borrowed Books"
+          />
         )}
       </Stack.Screen>
 
       <Stack.Screen name="ReservationDetails">
         {() => (
-          <PlaceholderScreen title="Reservation Details" />
+          <PlaceholderScreen
+            title="Reservation Details"
+          />
         )}
       </Stack.Screen>
     </Stack.Navigator>
