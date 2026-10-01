@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 import LoginScreen from "../screens/auth/LoginScreen";
+import AccountSettingsScreen
+  from "../screens/profile/AccountSettingsScreen";
 
 import { RootStackParamList } from "./types";
 
@@ -36,11 +38,12 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="AccountSettings">
-        {() => (
-          <PlaceholderScreen title="Account Settings" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="AccountSettings"
+        component={
+          AccountSettingsScreen
+        }
+      />
 
 
       {/*MEMBER 2 - BOOKS*/}

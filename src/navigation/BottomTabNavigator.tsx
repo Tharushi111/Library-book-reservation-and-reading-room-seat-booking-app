@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 import { BottomTabParamList } from "./types";
 import HomeScreen from "../screens/home/HomeScreen";
+import ProfileScreen from "../screens/profile/ProfileScreen";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -31,9 +32,10 @@ export default function BottomTabNavigator() {
         {() => <PlaceholderScreen title="Notifications" />}
       </Tab.Screen>
 
-      <Tab.Screen name="Profile">
-        {() => <PlaceholderScreen title="Profile" />}
-      </Tab.Screen>
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+      />
     </Tab.Navigator>
   );
 }
