@@ -9,6 +9,7 @@ import {
   Image,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -140,7 +141,6 @@ export default function ProfileScreen({
     [rootNavigation]
   );
 
-  // Refresh profile every time user returns from Account Settings
   useFocusEffect(
     useCallback(() => {
       loadProfile();
@@ -238,27 +238,24 @@ export default function ProfileScreen({
   if (loading) {
     return (
       <SafeAreaView
-        style={
-          styles.loadingContainer
-        }
+        style={styles.loadingContainer}
       >
-        <ActivityIndicator
-          size="large"
-          color={COLORS.primary}
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={COLORS.primary}
         />
 
-        <Text
-          style={styles.loadingText}
-        >
+        <ActivityIndicator
+          size="large"
+          color={COLORS.white}
+        />
+
+        <Text style={styles.loadingText}>
           Loading profile...
         </Text>
       </SafeAreaView>
     );
   }
-
-  // =====================================================
-  // DISPLAY VALUES
-  // =====================================================
 
   const fullName = [
     profile?.first_name,
@@ -276,181 +273,154 @@ export default function ProfileScreen({
       : profile?.student_id ||
         "Student";
 
-  // =====================================================
-  // UI
-  // =====================================================
-
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-    >
-      <ScrollView
-        contentContainerStyle={
-          styles.scrollContent
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
-      >
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.primary}
+      />
+
+      <View style={styles.container}>
         {/* =================================================
-            HEADER
+            BLUE HEADER
         ================================================= */}
 
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() =>
-              navigation.navigate(
-                "Home"
-              )
-            }
-          >
-            <Ionicons
-              name="chevron-back"
-              size={25}
-              color={COLORS.primary}
-            />
-          </TouchableOpacity>
-
-          <Text
-            style={styles.headerTitle}
-          >
-            My Profile
-          </Text>
-
-          <View
-            style={styles.headerSpacer}
-          />
-        </View>
-
-        {/* =================================================
-            PROFILE INFO
-        ================================================= */}
-
-        <View
-          style={styles.profileSection}
-        >
-          <View
-            style={
-              styles.avatarOuter
-            }
-          >
-            {profile?.avatar_url ? (
-              <Image
-                source={{
-                  uri: profile.avatar_url,
-                }}
-                style={styles.avatar}
+        <View style={styles.topSection}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() =>
+                navigation.navigate("Home")
+              }
+            >
+              <Ionicons
+                name="chevron-back"
+                size={26}
+                color={COLORS.white}
               />
-            ) : (
-              <View
-                style={
-                  styles.avatarPlaceholder
-                }
-              >
-                <Ionicons
-                  name="person"
-                  size={42}
-                  color={
-                    COLORS.primary
-                  }
-                />
-              </View>
-            )}
+            </TouchableOpacity>
+
+            <Text style={styles.headerTitle}>
+              My Profile
+            </Text>
+
+            <View style={styles.headerSpacer} />
           </View>
 
-          <Text
-            style={styles.nameText}
-          >
-            {displayName}
-          </Text>
+          {/* PROFILE IMAGE */}
 
-          <Text
-            style={
-              styles.studentIdText
-            }
-          >
-            {identification}
-          </Text>
+          <View style={styles.profileSection}>
+            <View style={styles.avatarOuter}>
+              {profile?.avatar_url ? (
+                <Image
+                  source={{
+                    uri: profile.avatar_url,
+                  }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View
+                  style={
+                    styles.avatarPlaceholder
+                  }
+                >
+                  <Ionicons
+                    name="person"
+                    size={44}
+                    color={COLORS.primary}
+                  />
+                </View>
+              )}
+            </View>
 
-          <Text
-            style={styles.emailText}
-          >
-            {profile?.email ||
-              "No email"}
-          </Text>
+            <Text style={styles.nameText}>
+              {displayName}
+            </Text>
+
+            <Text style={styles.studentIdText}>
+              {identification}
+            </Text>
+
+            <Text style={styles.emailText}>
+              {profile?.email ||
+                "No email"}
+            </Text>
+          </View>
         </View>
 
         {/* =================================================
-            MENU
+            WHITE CONTENT
         ================================================= */}
 
-        <View
-          style={styles.menuSection}
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={
+            styles.scrollContent
+          }
+          showsVerticalScrollIndicator={false}
         >
-          <ProfileMenuItem
-            icon="person-outline"
-            title="Edit Profile"
-            onPress={
-              openAccountSettings
-            }
-          />
+          <View style={styles.menuSection}>
+            <ProfileMenuItem
+              icon="person-outline"
+              title="Edit Profile"
+              subtitle="Update your personal information"
+              onPress={openAccountSettings}
+            />
 
-          <ProfileMenuItem
-            icon="lock-closed-outline"
-            title="Change Password"
-            onPress={
-              handleChangePassword
-            }
-          />
+            <ProfileMenuItem
+              icon="lock-closed-outline"
+              title="Change Password"
+              subtitle="Update your account password"
+              onPress={handleChangePassword}
+            />
 
-          <ProfileMenuItem
-            icon="notifications-outline"
-            title="Notification Settings"
-            onPress={
-              handleNotificationSettings
-            }
-          />
+            <ProfileMenuItem
+              icon="notifications-outline"
+              title="Notification Settings"
+              subtitle="Manage notification preferences"
+              onPress={
+                handleNotificationSettings
+              }
+            />
 
-          <ProfileMenuItem
-            icon="help-circle-outline"
-            title="Help & Support"
-            onPress={
-              handleHelpSupport
-            }
-          />
+            <ProfileMenuItem
+              icon="help-circle-outline"
+              title="Help & Support"
+              subtitle="Get assistance"
+              onPress={handleHelpSupport}
+            />
 
-          <ProfileMenuItem
-            icon="information-circle-outline"
-            title="About App"
-            onPress={handleAbout}
-          />
-        </View>
+            <ProfileMenuItem
+              icon="information-circle-outline"
+              title="About App"
+              subtitle="Learn more about SLIIT Library"
+              onPress={handleAbout}
+            />
+          </View>
 
-        {/* =================================================
-            LOGOUT
-        ================================================= */}
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={
-              styles.logoutText
-            }
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.8}
           >
-            Logout
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color={COLORS.secondary}
+            />
+
+            <Text style={styles.logoutText}>
+              Logout
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 // =========================================================
-// PROFILE MENU ITEM
+// MENU ITEM
 // =========================================================
 
 type MenuProps = {
@@ -462,12 +432,14 @@ type MenuProps = {
     | "information-circle-outline";
 
   title: string;
+  subtitle: string;
   onPress: () => void;
 };
 
 function ProfileMenuItem({
   icon,
   title,
+  subtitle,
   onPress,
 }: MenuProps) {
   return (
@@ -476,35 +448,33 @@ function ProfileMenuItem({
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <View
-        style={
-          styles.menuLeft
-        }
-      >
+      <View style={styles.menuLeft}>
         <View
-          style={
-            styles.menuIconContainer
-          }
+          style={styles.menuIconContainer}
         >
           <Ionicons
             name={icon}
-            size={19}
-            color={
-              COLORS.primary
-            }
+            size={20}
+            color={COLORS.primary}
           />
         </View>
 
-        <Text
-          style={styles.menuText}
-        >
-          {title}
-        </Text>
+        <View style={styles.menuTextArea}>
+          <Text style={styles.menuText}>
+            {title}
+          </Text>
+
+          <Text
+            style={styles.menuSubtitle}
+          >
+            {subtitle}
+          </Text>
+        </View>
       </View>
 
       <Ionicons
         name="chevron-forward"
-        size={18}
+        size={19}
         color="#0B67D1"
       />
     </TouchableOpacity>
@@ -518,52 +488,43 @@ function ProfileMenuItem({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor:
-      COLORS.background,
+    backgroundColor: COLORS.primary,
   },
 
-  scrollContent: {
-    flexGrow: 1,
-
-    paddingHorizontal: 22,
-    paddingTop: 10,
-    paddingBottom: 35,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
 
-  // =====================================================
   // LOADING
-  // =====================================================
 
   loadingContainer: {
     flex: 1,
-
     alignItems: "center",
     justifyContent: "center",
-
-    backgroundColor:
-      COLORS.background,
+    backgroundColor: COLORS.primary,
   },
 
   loadingText: {
     marginTop: 12,
-
     fontSize: 13,
-
-    color:
-      COLORS.textSecondary,
+    color: COLORS.white,
   },
 
-  // =====================================================
-  // HEADER
-  // =====================================================
+  // BLUE HEADER
+
+  topSection: {
+    backgroundColor: COLORS.primary,
+    paddingBottom: 26,
+  },
 
   header: {
     height: 55,
+    paddingHorizontal: 20,
 
     flexDirection: "row",
     alignItems: "center",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
   },
 
   backButton: {
@@ -577,167 +538,168 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-
-    color:
-      COLORS.primary,
+    color: COLORS.white,
   },
 
   headerSpacer: {
     width: 38,
   },
 
-  // =====================================================
-  // PROFILE
-  // =====================================================
+  // PROFILE INFORMATION
 
   profileSection: {
     alignItems: "center",
-
-    marginTop: 13,
-    marginBottom: 37,
+    paddingTop: 8,
   },
 
   avatarOuter: {
-    width: 84,
-    height: 84,
+    width: 94,
+    height: 94,
+    borderRadius: 47,
 
-    borderRadius: 42,
-
-    backgroundColor:
-      "#FFF0E5",
+    backgroundColor: "#FFF0E6",
 
     alignItems: "center",
     justifyContent: "center",
 
-    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: COLORS.white,
+
+    marginBottom: 12,
   },
 
   avatar: {
-    width: 72,
-    height: 72,
-
-    borderRadius: 36,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
   },
 
   avatarPlaceholder: {
-    width: 72,
-    height: 72,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
 
-    borderRadius: 36,
-
-    backgroundColor:
-      COLORS.white,
+    backgroundColor: COLORS.white,
 
     alignItems: "center",
     justifyContent: "center",
   },
 
   nameText: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: "700",
-
-    color:
-      COLORS.primary,
-
-    marginBottom: 5,
+    color: COLORS.white,
+    marginBottom: 4,
   },
 
   studentIdText: {
     fontSize: 12,
-
-    color:
-      COLORS.textSecondary,
-
-    marginBottom: 4,
+    fontWeight: "500",
+    color: "#DDE8F7",
+    marginBottom: 3,
   },
 
   emailText: {
     fontSize: 11,
-
-    color: "#8B96A8",
+    color: "#C5D6EB",
   },
 
-  // =====================================================
+  // BODY
+
+  body: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 35,
+  },
+
   // MENU
-  // =====================================================
 
   menuSection: {
     width: "100%",
   },
 
   menuItem: {
-    minHeight: 56,
+    minHeight: 66,
 
     flexDirection: "row",
     alignItems: "center",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
 
-    backgroundColor:
-      COLORS.white,
+    backgroundColor: COLORS.white,
 
     borderWidth: 1,
-    borderColor:
-      "#D7E2F0",
+    borderColor: "#D7E2F0",
 
-    borderRadius: 9,
+    borderRadius: 11,
 
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
 
     marginBottom: 10,
   },
 
   menuLeft: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
   },
 
   menuIconContainer: {
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
 
-    borderRadius: 15,
+    borderRadius: 19,
 
-    backgroundColor:
-      "#F0F6FD",
+    backgroundColor: "#EFF5FC",
 
     alignItems: "center",
     justifyContent: "center",
 
-    marginRight: 10,
+    marginRight: 11,
+  },
+
+  menuTextArea: {
+    flex: 1,
   },
 
   menuText: {
-    fontSize: 12.5,
-    fontWeight: "600",
-
-    color:
-      COLORS.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.primary,
   },
 
-  // =====================================================
+  menuSubtitle: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 3,
+  },
+
   // LOGOUT
-  // =====================================================
 
   logoutButton: {
-    height: 52,
+    height: 54,
 
-    backgroundColor:
-      "#FFF0E6",
-
-    borderRadius: 9,
-
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+
+    backgroundColor: "#FFF0E6",
+
+    borderRadius: 10,
 
     marginTop: 10,
   },
 
   logoutText: {
-    fontSize: 13,
+    marginLeft: 7,
+
+    fontSize: 14,
     fontWeight: "700",
 
-    color:
-      COLORS.secondary,
+    color: COLORS.secondary,
   },
 });
