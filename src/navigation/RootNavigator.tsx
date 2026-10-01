@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
+import LoginScreen from "../screens/auth/LoginScreen";
 
 import { RootStackParamList } from "./types";
 
@@ -19,11 +20,10 @@ export default function RootNavigator() {
     >
       {/*MEMBER 1 - CORE ACCESS*/}
 
-      <Stack.Screen name="Login">
-        {() => (
-          <PlaceholderScreen title="Login" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+      />
 
       <Stack.Screen
         name="MainTabs"
