@@ -5,6 +5,11 @@ import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 
 import { RootStackParamList } from "./types";
+import SpaceReservationScreen from "../screens/spaces/SpaceReservationScreen";
+import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
+import BookStudyRoomScreen from "../screens/spaces/BookStudyRoomScreen";
+import BookingConfirmationScreen from "../screens/spaces/BookingConfirmationScreen";
+import BookingDetailsScreen from "../screens/spaces/BookingDetailsScreen";
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -84,35 +89,13 @@ export default function RootNavigator() {
 
       {/*MEMBER 3 - STUDY SPACES*/}
 
-      <Stack.Screen name="SpaceReservation">
-        {() => (
-          <PlaceholderScreen title="Space Reservation" />
-        )}
-      </Stack.Screen>
+            {/*MEMBER 3 - STUDY SPACES*/}
 
-      <Stack.Screen name="StudyRooms">
-        {() => (
-          <PlaceholderScreen title="Study Rooms" />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookStudyRoom">
-        {() => (
-          <PlaceholderScreen title="Book Study Room" />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookingConfirmation">
-        {() => (
-          <PlaceholderScreen title="Booking Confirmation" />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookingDetails">
-        {() => (
-          <PlaceholderScreen title="Booking Details" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen name="SpaceReservation" component={SpaceReservationScreen} />
+      <Stack.Screen name="StudyRooms" component={StudyRoomsScreen} />
+      <Stack.Screen name="BookStudyRoom" component={BookStudyRoomScreen} />
+      <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
+      <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
 
 
       {/*MEMBER 4 - ACTIVITY*/}

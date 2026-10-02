@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import PlaceholderScreen from "../screens/PlaceholderScreen";
+import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
 import { BottomTabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -21,9 +22,7 @@ export default function BottomTabNavigator() {
         {() => <PlaceholderScreen title="Books" />}
       </Tab.Screen>
 
-      <Tab.Screen name="Spaces">
-        {() => <PlaceholderScreen title="Study Spaces" />}
-      </Tab.Screen>
+      <Tab.Screen name="Spaces" component={StudyRoomsScreen} />
 
       <Tab.Screen name="Notifications">
         {() => <PlaceholderScreen title="Notifications" />}
