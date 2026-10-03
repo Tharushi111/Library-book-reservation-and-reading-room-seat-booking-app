@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
+import SearchResultsScreen from "../screens/books/SearchResultsScreen";
 
 // =========================================================
 // MEMBER 1 - CORE ACCESS
@@ -70,13 +71,10 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="SearchResults">
-        {() => (
-          <PlaceholderScreen
-            title="Search Results"
-          />
-        )}
-      </Stack.Screen>
+     <Stack.Screen
+        name="SearchResults"
+        component={SearchResultsScreen}
+      />
 
       <Stack.Screen name="BookDetails">
         {() => (
