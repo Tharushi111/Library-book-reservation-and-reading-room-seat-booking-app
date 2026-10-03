@@ -15,7 +15,7 @@ const Stack =
 export default function RootNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="MyBookReservations"
       screenOptions={{
         headerShown: false,
       }}

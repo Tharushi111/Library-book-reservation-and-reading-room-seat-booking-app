@@ -1,72 +1,58 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-
-const ACTIVE_RESERVATIONS = [
-  {
-    id: 'RES-10245',
-    bookId: 'BK1024',
-    title: 'Database Systems',
-    status: 'Reserved',
-    dateLabel: 'Collect By',
-    date: '12 Sep 2026',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Database',
-  },
-  {
-    id: 'RES-20874',
-    bookId: 'BK2087',
-    title: 'Software Engineering',
-    status: 'Ready for Collection',
-    dateLabel: 'Collect By',
-    date: '14 Sep 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=SE',
-  },
-  {
-    id: 'RES-35678',
-    bookId: 'BK3567',
-    title: 'Web Technologies',
-    status: 'Reserved',
-    dateLabel: 'Collect By',
-    date: '16 Sep 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Web',
-  },
-];
-
-const PAST_RESERVATIONS = [
-  {
-    id: 'RES-11311',
-    bookId: 'BK1131',
-    title: 'Data Structures',
-    status: 'Collected',
-    dateLabel: 'Collect By',
-    date: '02 Sep 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=DS',
-  },
-  {
-    id: 'RES-33314',
-    bookId: 'BK3331',
-    title: 'Human Computer Interaction',
-    status: 'Cancelled',
-    dateLabel: 'Collect By',
-    date: '28 Aug 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=HCI',
-  },
-  {
-    id: 'RES-19762',
-    bookId: 'BK1976',
-    title: 'Introduction to AI',
-    status: 'Returned',
-    dateLabel: 'Collect By',
-    date: '15 Aug 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=AI',
-  },
-];
+import { getUserReservations, ReservationItem } from '../../services/activityService';
 
 export default function MyBookReservations({ navigation }: any) {
+  const [reservations, setReservations] = useState<ReservationItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'Active' | 'Past'>('Active');
 
-  const data = activeTab === 'Active' ? ACTIVE_RESERVATIONS : PAST_RESERVATIONS;
+  const loadReservations = async () => {
+    try {
+      const data = await getUserReservations();
+      setReservations(data);
+    } catch (err) {
+      console.warn('Error loading reservations:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReservations();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadReservations();
+  };
+
+  const activeReservations = reservations.filter(
+    (item) => item.status === 'Reserved' || item.status === 'Ready for Collection'
+  );
+
+  const pastReservations = reservations.filter(
+    (item) => item.status === 'Collected' || item.status === 'Cancelled' || item.status === 'Expired' || item.status === 'Returned'
+  );
+
+  const data = activeTab === 'Active' ? activeReservations : pastReservations;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -77,6 +63,7 @@ export default function MyBookReservations({ navigation }: any) {
       case 'Ready for Collection':
         return COLORS.warning;
       case 'Cancelled':
+      case 'Expired':
         return COLORS.danger;
       default:
         return COLORS.primary;
@@ -92,31 +79,43 @@ export default function MyBookReservations({ navigation }: any) {
       case 'Ready for Collection':
         return '#FEF3C7'; // light yellow
       case 'Cancelled':
+      case 'Expired':
         return '#FEE2E2'; // light red
       default:
         return '#E0E7FF';
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: ReservationItem }) => (
     <View style={styles.card}>
       <Image source={{ uri: item.image }} style={styles.bookCover} />
       <View style={styles.cardContent}>
-        <Text style={styles.bookTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.bookTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
         <Text style={styles.bookId}>Book ID: {item.bookId}</Text>
         <View style={styles.statusRow}>
           <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(item.status) }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text>
+            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+              {item.status}
+            </Text>
           </View>
         </View>
         <View style={styles.dateRow}>
           <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.dateText}>{item.dateLabel}: {item.date}</Text>
+          <Text style={styles.dateText}>
+            {item.dateLabel}: {item.date}
+          </Text>
         </View>
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.detailsBtn}
-        onPress={() => navigation.navigate('ReservationDetails', { reservation: item })}
+        onPress={() =>
+          navigation.navigate('ReservationDetails', {
+            reservationId: item.id,
+            reservation: item,
+          })
+        }
       >
         <Text style={styles.detailsBtnText}>View Details</Text>
       </TouchableOpacity>
@@ -125,21 +124,46 @@ export default function MyBookReservations({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Activity Category Switcher for testing all Member 4 screens */}
+      <View style={styles.activityNav}>
+        <TouchableOpacity
+          style={[styles.activityNavBtn, styles.activityNavBtnActive]}
+          onPress={() => navigation.navigate('MyBookReservations')}
+        >
+          <Text style={[styles.activityNavText, styles.activityNavTextActive]}>Book Reservations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('MyStudyRoomBookings')}
+        >
+          <Text style={styles.activityNavText}>Room Bookings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('BorrowedBooks')}
+        >
+          <Text style={styles.activityNavText}>Borrowed Books</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Book Reservations</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+          <Ionicons name="refresh-outline" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
+      {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'Active' && styles.activeTabBtn]}
           onPress={() => setActiveTab('Active')}
         >
           <Text style={[styles.tabText, activeTab === 'Active' && styles.activeTabText]}>
-            Active ({ACTIVE_RESERVATIONS.length})
+            Active ({activeReservations.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -147,18 +171,45 @@ export default function MyBookReservations({ navigation }: any) {
           onPress={() => setActiveTab('Past')}
         >
           <Text style={[styles.tabText, activeTab === 'Past' && styles.activeTabText]}>
-            Past
+            Past ({pastReservations.length})
           </Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.bookId}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Content */}
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading reservations...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="bookmark-outline" size={48} color={COLORS.border} />
+              <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} reservations</Text>
+              <Text style={styles.emptySubtitle}>
+                {activeTab === 'Active'
+                  ? 'You do not have any active book reservations.'
+                  : 'Your past reservation history will appear here.'}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -167,6 +218,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  activityNav: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: COLORS.surface,
+    gap: 8,
+  },
+  activityNavBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activityNavBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  activityNavText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  activityNavTextActive: {
+    color: COLORS.white,
   },
   header: {
     flexDirection: 'row',
@@ -177,6 +256,9 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   backBtn: {
+    padding: 5,
+  },
+  refreshBtn: {
     padding: 5,
   },
   headerTitle: {
@@ -233,6 +315,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 15,
+    backgroundColor: COLORS.surface,
   },
   cardContent: {
     flex: 1,
@@ -279,5 +362,34 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 12,
     fontWeight: '600',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 20,
   },
 });

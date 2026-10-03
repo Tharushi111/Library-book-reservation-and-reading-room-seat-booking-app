@@ -1,78 +1,155 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-
-const DUE_SOON = [
-  {
-    id: 'BRW-01',
-    title: 'Database Systems',
-    dueIn: 'Due in 3 days',
-    dueDate: '15 Sep 2026',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Database',
-  },
-  {
-    id: 'BRW-02',
-    title: 'Web Technologies',
-    dueIn: 'Due in 7 days',
-    dueDate: '20 Sep 2025',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Web',
-  },
-];
-
-const OTHER_BOOKS = [
-  {
-    id: 'BRW-03',
-    title: 'Web Development',
-    dueIn: 'Due in 15 days',
-    dueDate: '28 Sep 2026',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Dev',
-  },
-  {
-    id: 'BRW-04',
-    title: 'Clean Code',
-    dueIn: 'Due in 20 days',
-    dueDate: '05 Oct 2026',
-    image: 'https://via.placeholder.com/100x150/0B4DA2/FFFFFF?text=Clean',
-  },
-];
+import {
+  getUserBorrowedBooks,
+  BorrowedBookItem,
+} from '../../services/activityService';
 
 export default function BorrowedBooks({ navigation }: any) {
-  const BookCard = ({ item, isDueSoon }: { item: any; isDueSoon: boolean }) => (
+  const [books, setBooks] = useState<BorrowedBookItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadBooks = async () => {
+    try {
+      const data = await getUserBorrowedBooks();
+      setBooks(data);
+    } catch (err) {
+      console.warn('Error loading borrowed books:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadBooks();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadBooks();
+  };
+
+  const dueSoonBooks = books.filter(
+    (b) => b.dueIn.toLowerCase().includes('due in 1') ||
+           b.dueIn.toLowerCase().includes('due in 2') ||
+           b.dueIn.toLowerCase().includes('due in 3') ||
+           b.dueIn.toLowerCase().includes('today') ||
+           b.dueIn.toLowerCase().includes('overdue')
+  );
+
+  const otherBooks = books.filter((b) => !dueSoonBooks.includes(b));
+
+  const BookCard = ({ item, isDueSoon }: { item: BorrowedBookItem; isDueSoon: boolean }) => (
     <View style={[styles.card, isDueSoon && styles.cardDueSoon]}>
       <Image source={{ uri: item.image }} style={styles.bookCover} />
       <View style={styles.cardContent}>
-        <Text style={styles.bookTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={[styles.dueInText, isDueSoon && { color: COLORS.danger }]}>{item.dueIn}</Text>
+        <Text style={styles.bookTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={[styles.dueInText, isDueSoon && { color: COLORS.danger }]}>
+          {item.dueIn}
+        </Text>
         <Text style={styles.dateText}>Due date: {item.dueDate}</Text>
-        <TouchableOpacity style={styles.detailsBtn}>
-          <Text style={styles.detailsBtnText}>View Details</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Activity Category Switcher */}
+      <View style={styles.activityNav}>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('MyBookReservations')}
+        >
+          <Text style={styles.activityNavText}>Book Reservations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('MyStudyRoomBookings')}
+        >
+          <Text style={styles.activityNavText}>Room Bookings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.activityNavBtn, styles.activityNavBtnActive]}
+          onPress={() => navigation.navigate('BorrowedBooks')}
+        >
+          <Text style={[styles.activityNavText, styles.activityNavTextActive]}>Borrowed Books</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Borrowed Books</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+          <Ionicons name="refresh-outline" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionTitle}>Due Soon</Text>
-        {DUE_SOON.map((book) => (
-          <BookCard key={book.id} item={book} isDueSoon={true} />
-        ))}
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading borrowed books...</Text>
+        </View>
+      ) : books.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="book-outline" size={48} color={COLORS.border} />
+          <Text style={styles.emptyTitle}>No borrowed books</Text>
+          <Text style={styles.emptySubtitle}>You currently do not have any borrowed library books.</Text>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+        >
+          {dueSoonBooks.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Due Soon</Text>
+              {dueSoonBooks.map((book) => (
+                <BookCard key={book.id} item={book} isDueSoon={true} />
+              ))}
+            </>
+          )}
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Other Borrowed Books</Text>
-        {OTHER_BOOKS.map((book) => (
-          <BookCard key={book.id} item={book} isDueSoon={false} />
-        ))}
-      </ScrollView>
+          {otherBooks.length > 0 && (
+            <>
+              <Text style={[styles.sectionTitle, { marginTop: dueSoonBooks.length > 0 ? 10 : 0 }]}>
+                Other Borrowed Books
+              </Text>
+              {otherBooks.map((book) => (
+                <BookCard key={book.id} item={book} isDueSoon={false} />
+              ))}
+            </>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -81,6 +158,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  activityNav: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: COLORS.surface,
+    gap: 8,
+  },
+  activityNavBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activityNavBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  activityNavText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  activityNavTextActive: {
+    color: COLORS.white,
   },
   header: {
     flexDirection: 'row',
@@ -91,6 +196,9 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   backBtn: {
+    padding: 5,
+  },
+  refreshBtn: {
     padding: 5,
   },
   headerTitle: {
@@ -124,14 +232,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardDueSoon: {
-    backgroundColor: '#FEF2F2', // light red
-    borderColor: '#FCCACA', // slightly darker red border
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCCACA',
   },
   bookCover: {
     width: 60,
     height: 80,
     borderRadius: 8,
     marginRight: 15,
+    backgroundColor: COLORS.surface,
   },
   cardContent: {
     flex: 1,
@@ -152,14 +261,34 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: 8,
   },
-  detailsBtn: {
-    alignSelf: 'flex-end',
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
   },
-  detailsBtnText: {
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '600',
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 20,
   },
 });

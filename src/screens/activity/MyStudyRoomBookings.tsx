@@ -1,86 +1,208 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-
-const UPCOMING_BOOKINGS = [
-  {
-    id: 'BKG-001',
-    room: 'Study Room A',
-    floor: 'Floor 2',
-    seat: 'A-12',
-    date: '13 Sep 2026',
-    time: '10:00 AM - 12:00 PM',
-    status: 'Confirmed',
-    image: 'https://via.placeholder.com/100x80/cccccc/000000?text=Room+A',
-  },
-  {
-    id: 'BKG-002',
-    room: 'Study Room B',
-    floor: 'Floor 2',
-    seat: 'B-04',
-    date: '14 Sep 2026',
-    time: '01:00 PM - 03:00 PM',
-    status: 'Confirmed',
-    image: 'https://via.placeholder.com/100x80/cccccc/000000?text=Room+B',
-  },
-];
+import {
+  getUserRoomBookings,
+  cancelRoomBooking,
+  RoomBookingItem,
+} from '../../services/activityService';
 
 export default function MyStudyRoomBookings({ navigation }: any) {
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.roomImage} />
-      <View style={styles.cardContent}>
-        <Text style={styles.roomTitle}>{item.room}</Text>
-        
-        <View style={styles.infoRow}>
-          <Ionicons name="business-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>{item.floor}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="pricetag-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>Seat: {item.seat}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>Date: {item.date}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>Time: {item.time}</Text>
-        </View>
+  const [bookings, setBookings] = useState<RoomBookingItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-        <View style={styles.bottomRow}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{item.status}</Text>
+  const loadBookings = async () => {
+    try {
+      const data = await getUserRoomBookings();
+      setBookings(data);
+    } catch (err) {
+      console.warn('Error loading bookings:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadBookings();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadBookings();
+  };
+
+  const handleCancelBooking = (booking: RoomBookingItem) => {
+    if (booking.status === 'Cancelled') {
+      Alert.alert('Booking Notice', 'This booking has already been cancelled.');
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Room Booking',
+      `Are you sure you want to cancel your booking for ${booking.room}?`,
+      [
+        { text: 'No, Keep It', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            const res = await cancelRoomBooking(booking.id);
+            if (res.success) {
+              setBookings((prev) =>
+                prev.map((b) =>
+                  b.id === booking.id ? { ...b, status: 'Cancelled' } : b
+                )
+              );
+              Alert.alert('Booking Cancelled', 'Your room booking was cancelled.');
+            } else {
+              Alert.alert('Error', res.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const renderItem = ({ item }: { item: RoomBookingItem }) => {
+    const isCancelled = item.status === 'Cancelled';
+
+    return (
+      <View style={styles.card}>
+        <Image source={{ uri: item.image }} style={styles.roomImage} />
+        <View style={styles.cardContent}>
+          <Text style={styles.roomTitle}>{item.room}</Text>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="business-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.infoText}>{item.floor}</Text>
           </View>
-          <TouchableOpacity onPress={() => {}}>
-            <Text style={styles.detailsBtnText}>View Details</Text>
-          </TouchableOpacity>
+          <View style={styles.infoRow}>
+            <Ionicons name="pricetag-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.infoText}>{item.seat}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.infoText}>Date: {item.date}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.infoText}>Time: {item.time}</Text>
+          </View>
+
+          <View style={styles.bottomRow}>
+            <View
+              style={[
+                styles.statusBadge,
+                isCancelled && { backgroundColor: '#FEE2E2' },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  isCancelled && { color: COLORS.danger },
+                ]}
+              >
+                {item.status}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => handleCancelBooking(item)}>
+              <Text
+                style={[
+                  styles.cancelBtnText,
+                  isCancelled && { color: COLORS.textSecondary },
+                ]}
+              >
+                {isCancelled ? 'Cancelled' : 'Cancel Booking'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Activity Category Switcher */}
+      <View style={styles.activityNav}>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('MyBookReservations')}
+        >
+          <Text style={styles.activityNavText}>Book Reservations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.activityNavBtn, styles.activityNavBtnActive]}
+          onPress={() => navigation.navigate('MyStudyRoomBookings')}
+        >
+          <Text style={[styles.activityNavText, styles.activityNavTextActive]}>Room Bookings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.activityNavBtn}
+          onPress={() => navigation.navigate('BorrowedBooks')}
+        >
+          <Text style={styles.activityNavText}>Borrowed Books</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Seat Bookings</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>My Study Room Bookings</Text>
+        <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+          <Ionicons name="refresh-outline" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionTitle}>Upcoming</Text>
+      <Text style={styles.sectionTitle}>Bookings</Text>
 
-      <FlatList
-        data={UPCOMING_BOOKINGS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading bookings...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={bookings}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="easel-outline" size={48} color={COLORS.border} />
+              <Text style={styles.emptyTitle}>No study room bookings</Text>
+              <Text style={styles.emptySubtitle}>You do not have any room bookings scheduled.</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -89,6 +211,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  activityNav: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: COLORS.surface,
+    gap: 8,
+  },
+  activityNavBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activityNavBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  activityNavText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  activityNavTextActive: {
+    color: COLORS.white,
   },
   header: {
     flexDirection: 'row',
@@ -99,6 +249,9 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   backBtn: {
+    padding: 5,
+  },
+  refreshBtn: {
     padding: 5,
   },
   headerTitle: {
@@ -136,6 +289,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 15,
+    backgroundColor: COLORS.surface,
   },
   cardContent: {
     flex: 1,
@@ -173,9 +327,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  detailsBtnText: {
-    color: COLORS.primary,
+  cancelBtnText: {
+    color: COLORS.danger,
     fontSize: 12,
     fontWeight: '600',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 20,
   },
 });
