@@ -7,6 +7,7 @@ import PlaceholderScreen from "../screens/PlaceholderScreen";
 import { RootStackParamList } from "./types";
 
 import BookCatalogueScreen from "../screens/books/bookCatalogueScreen";
+import BookDetailsScreen from "../screens/books/bookDetailsScreen";
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -46,23 +47,16 @@ export default function RootNavigator() {
 
 
       {/*MEMBER 2 - BOOKS*/}
-
+      
       <Stack.Screen
         name="BookCatalogue"
         component={BookCatalogueScreen}
       />
 
-      <Stack.Screen name="SearchResults">
-        {() => (
-          <PlaceholderScreen title="Search Results" />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookDetails">
-        {() => (
-          <PlaceholderScreen title="Book Details" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="BookDetails"
+        component={BookDetailsScreen}
+      />
 
       <Stack.Screen name="BorrowedBookDetails">
         {() => (

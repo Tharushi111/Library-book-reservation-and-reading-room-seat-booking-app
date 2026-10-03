@@ -15,7 +15,7 @@ import type { Book } from "../../types";
 import { getCatalogue } from "../../services/bookService";
 import { COLORS } from "../../constants/colors";
 
-const CATEGORIES = ["All", "Fiction", "Sci-tech", "Journals"];
+const CATEGORIES = ["All", "Data Science", "Database", "Journals"];
 
 export default function BookCatalogueScreen() {
   const navigation = useNavigation<any>();
