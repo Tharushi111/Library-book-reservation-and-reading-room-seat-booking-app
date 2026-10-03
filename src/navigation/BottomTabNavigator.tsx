@@ -6,6 +6,7 @@ import { BottomTabParamList } from "./types";
 import HomeScreen from "../screens/home/HomeScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import BookSearchScreen from "../screens/books/BookSearchScreen";
+import NotificationsScreen from "../screens/notifications/NotificationsScreen";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -29,9 +30,10 @@ export default function BottomTabNavigator() {
         {() => <PlaceholderScreen title="Study Spaces" />}
       </Tab.Screen>
 
-      <Tab.Screen name="Notifications">
-        {() => <PlaceholderScreen title="Notifications" />}
-      </Tab.Screen>
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+      />
 
       <Tab.Screen
         name="Profile"
