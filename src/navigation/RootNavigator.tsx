@@ -8,6 +8,7 @@ import { RootStackParamList } from "./types";
 
 import BookCatalogueScreen from "../screens/books/bookCatalogueScreen";
 import BookDetailsScreen from "../screens/books/bookDetailsScreen";
+import ReservationConfirmationScreen from "../screens/books/reservationConfirmationScreen";
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -47,7 +48,7 @@ export default function RootNavigator() {
 
 
       {/*MEMBER 2 - BOOKS*/}
-      
+
       <Stack.Screen
         name="BookCatalogue"
         component={BookCatalogueScreen}
@@ -64,11 +65,10 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="ReservationConfirmation">
-        {() => (
-          <PlaceholderScreen title="Reservation Confirmation" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="ReservationConfirmation"
+        component={ReservationConfirmationScreen}
+      />
 
       <Stack.Screen name="QueueConfirmation">
         {() => (

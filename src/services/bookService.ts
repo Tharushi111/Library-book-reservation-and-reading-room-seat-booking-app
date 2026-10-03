@@ -23,7 +23,8 @@ function mapBook(row: any): Book {
 }
 
 /**
- * Convert Supabase reservation data into BookReservation.
+ * Convert Supabase reservation data into the application's
+ * BookReservation type.
  */
 function mapReservation(row: any): BookReservation {
   return {
@@ -31,44 +32,80 @@ function mapReservation(row: any): BookReservation {
     userId: row.user_id,
     bookId: row.book_id,
     reservedAt: row.reserved_at,
-    collectionDeadline:
-      row.collection_deadline ?? undefined,
+    collectionDeadline: row.collection_deadline ?? undefined,
     status: row.status,
-    book: row.book
-      ? mapBook(row.book)
-      : undefined,
+    book: row.book ? mapBook(row.book) : undefined,
   };
 }
 
 /**
- * Convert Supabase queue data into BookQueueEntry.
+ * Convert Supabase queue data into the application's
+ * BookQueueEntry type.
  */
 function mapQueueEntry(row: any): BookQueueEntry {
   return {
     id: row.id,
     userId: row.user_id,
     bookId: row.book_id,
-    queuePosition:
-      row.queue_position ?? undefined,
-    estimatedWaitDays:
-      row.estimated_wait_days ?? undefined,
+    queuePosition: row.queue_position ?? undefined,
+    estimatedWaitDays: row.estimated_wait_days ?? undefined,
     joinedAt: row.joined_at,
     status: row.status,
-    book: row.book
-      ? mapBook(row.book)
-      : undefined,
+    book: row.book ? mapBook(row.book) : undefined,
   };
 }
 
-/** - Search the catalogue by title or author */
-export async function searchBooks(
-  query: string
-): Promise<Book[]> {
+/**
+ * Get the currently authenticated Supabase user.
+ *
+ * IMPORTANT:
+ * This depends on the User Management member's login
+ * creating a Supabase Auth session.
+ */
+async function getCurrentUserId(): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!user) {
+    throw new Error(
+      "You must be logged in to reserve or manage a book."
+    );
+  }
+
+  return user.id;
+}
+
+/**
+ * Prevent special characters from breaking the search pattern.
+ */
+function sanitizeSearchTerm(input: string): string {
+  return input
+    .trim()
+    .replace(/[%_]/g, "")
+    .replace(/,/g, " ");
+}
+
+/**
+ * Search books by title, author, or category.
+ */
+export async function searchBooks(query: string): Promise<Book[]> {
+  const searchTerm = sanitizeSearchTerm(query);
+
+  if (!searchTerm) {
+    return getCatalogue();
+  }
+
   const { data, error } = await supabase
     .from("books")
     .select("*")
     .or(
-      `title.ilike.%${query}%,author.ilike.%${query}%`
+      `title.ilike.%${searchTerm}%,author.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`
     )
     .order("title", { ascending: true });
 
@@ -79,7 +116,11 @@ export async function searchBooks(
   return (data ?? []).map(mapBook);
 }
 
-/** Browse the full catalogue, optionally filtered by category */
+/**
+ * Get all books in the catalogue.
+ *
+ * Optional category filter.
+ */
 export async function getCatalogue(
   category?: string
 ): Promise<Book[]> {
@@ -101,7 +142,9 @@ export async function getCatalogue(
   return (data ?? []).map(mapBook);
 }
 
-/** - Get a single book with current availability */
+/**
+ * Get a single book by ID.
+ */
 export async function getBookById(
   bookId: string
 ): Promise<Book> {
@@ -119,27 +162,38 @@ export async function getBookById(
 }
 
 /**
- * — Reserve an available book.
+ * Reserve a book.
  *
- * Creates a reservation with a 48-hour collection deadline.
+ * This requires a real Supabase Auth session.
+ *
+ * The database RLS policy checks:
+ *
+ * auth.uid() = user_id
+ *
+ * Therefore we must use the authenticated user's
+ * Supabase Auth ID.
  */
 export async function reserveBook(
-  bookId: string,
-  userId: string
+  bookId: string
 ): Promise<BookReservation> {
+  // Get the logged-in Supabase user.
+  const userId = await getCurrentUserId();
+
+  // Get the book and verify availability.
   const book = await getBookById(bookId);
 
   if (book.availabilityStatus !== "available") {
     throw new Error(
-      "This book is currently unavailable — join the queue instead."
+      "This book is currently unavailable. Please join the queue instead."
     );
   }
 
-  // 48-hour collection deadline
+  // Reservation collection deadline = 48 hours.
   const collectionDeadline = new Date(
     Date.now() + 48 * 60 * 60 * 1000
   ).toISOString();
 
+  // Insert reservation.
   const { data, error } = await supabase
     .from("book_reservations")
     .insert({
@@ -148,57 +202,56 @@ export async function reserveBook(
       status: "reserved",
       collection_deadline: collectionDeadline,
     })
-    .select("*, book:books(*)")
+    .select(`
+      *,
+      book:books(*)
+    `)
     .single();
 
   if (error) {
     throw error;
   }
 
-  // Update book availability
-  const { error: updateError } = await supabase
-    .from("books")
-    .update({
-      availability_status: "reserved",
-    })
-    .eq("id", bookId);
-
-  if (updateError) {
-    throw updateError;
-  }
-
   return mapReservation(data);
 }
 
-/** — Cancel an active book reservation */
+/**
+ * Cancel a reservation belonging to the current user.
+ */
 export async function cancelReservation(
   reservationId: string
 ): Promise<void> {
-  // Find the book connected to the reservation
-  const { data: reservation, error: fetchError } =
-    await supabase
-      .from("book_reservations")
-      .select("book_id")
-      .eq("id", reservationId)
-      .single();
+  const userId = await getCurrentUserId();
+
+  // Find the reservation first so we know which book to release.
+  const {
+    data: reservation,
+    error: fetchError,
+  } = await supabase
+    .from("book_reservations")
+    .select("book_id")
+    .eq("id", reservationId)
+    .eq("user_id", userId)
+    .single();
 
   if (fetchError) {
     throw fetchError;
   }
 
-  // Cancel the reservation
+  // Cancel reservation.
   const { error } = await supabase
     .from("book_reservations")
     .update({
       status: "cancelled",
     })
-    .eq("id", reservationId);
+    .eq("id", reservationId)
+    .eq("user_id", userId);
 
   if (error) {
     throw error;
   }
 
-  // Make the book available again
+  // Make the book available again.
   if (reservation?.book_id) {
     const { error: bookError } = await supabase
       .from("books")
@@ -213,21 +266,26 @@ export async function cancelReservation(
   }
 }
 
-/** — Join the queue for a borrowed book */
+/**
+ * Join the waiting queue for a book.
+ */
 export async function joinQueue(
-  bookId: string,
-  userId: string
+  bookId: string
 ): Promise<BookQueueEntry> {
-  // Count current people waiting
-  const { count, error: countError } =
-    await supabase
-      .from("book_queue")
-      .select("*", {
-        count: "exact",
-        head: true,
-      })
-      .eq("book_id", bookId)
-      .eq("status", "waiting");
+  const userId = await getCurrentUserId();
+
+  // Count existing waiting users.
+  const {
+    count,
+    error: countError,
+  } = await supabase
+    .from("book_queue")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .eq("book_id", bookId)
+    .eq("status", "waiting");
 
   if (countError) {
     throw countError;
@@ -235,6 +293,7 @@ export async function joinQueue(
 
   const nextPosition = (count ?? 0) + 1;
 
+  // Add user to queue.
   const { data, error } = await supabase
     .from("book_queue")
     .insert({
@@ -243,7 +302,10 @@ export async function joinQueue(
       queue_position: nextPosition,
       status: "waiting",
     })
-    .select("*, book:books(*)")
+    .select(`
+      *,
+      book:books(*)
+    `)
     .single();
 
   if (error) {
@@ -253,30 +315,41 @@ export async function joinQueue(
   return mapQueueEntry(data);
 }
 
-/** F— Toggle notification preference */
+/**
+ * Notification preference.
+ *
+ * The current book_queue table does not have a notification
+ * preference column, so we do not modify the database here.
+ */
 export async function setQueueNotify(
   queueEntryId: string,
   enabled: boolean
 ): Promise<void> {
-  // current book_queue table does NOT contain
-  // a notify_enabled column.
-  //
-  // Therefore this function cannot update a notification
-  // preference until that column is added to the database.
-
   console.warn(
-    "Notification preference is not currently supported by the book_queue schema."
+    "Notification preference is not currently supported by the book_queue schema.",
+    {
+      queueEntryId,
+      enabled,
+    }
   );
 }
 
-/** Fetch a single queue entry */
+/**
+ * Get one queue entry belonging to the current user.
+ */
 export async function getQueueEntry(
   queueEntryId: string
 ): Promise<BookQueueEntry> {
+  const userId = await getCurrentUserId();
+
   const { data, error } = await supabase
     .from("book_queue")
-    .select("*, book:books(*)")
+    .select(`
+      *,
+      book:books(*)
+    `)
     .eq("id", queueEntryId)
+    .eq("user_id", userId)
     .single();
 
   if (error) {
@@ -286,14 +359,26 @@ export async function getQueueEntry(
   return mapQueueEntry(data);
 }
 
-/** Fetch a single reservation */
+/**
+ * Get one reservation belonging to the current user.
+ */
 export async function getReservation(
   reservationId: string
 ): Promise<BookReservation> {
+  if (!reservationId) {
+    throw new Error("Reservation ID is missing.");
+  }
+
+  const userId = await getCurrentUserId();
+
   const { data, error } = await supabase
     .from("book_reservations")
-    .select("*, book:books(*)")
+    .select(`
+      *,
+      book:books(*)
+    `)
     .eq("id", reservationId)
+    .eq("user_id", userId)
     .single();
 
   if (error) {
@@ -303,11 +388,16 @@ export async function getReservation(
   return mapReservation(data);
 }
 
-/** Count total people waiting in a book's queue */
+/**
+ * Get the number of users waiting for a book.
+ */
 export async function getQueueTotal(
   bookId: string
 ): Promise<number> {
-  const { count, error } = await supabase
+  const {
+    count,
+    error,
+  } = await supabase
     .from("book_queue")
     .select("*", {
       count: "exact",
