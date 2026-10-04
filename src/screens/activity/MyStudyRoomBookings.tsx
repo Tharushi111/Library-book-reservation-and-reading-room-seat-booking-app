@@ -84,7 +84,10 @@ export default function MyStudyRoomBookings({ navigation }: any) {
     const isCancelled = item.status === 'Cancelled';
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => navigation.navigate('BookingDetails', { bookingId: item.id, booking: item })}
+      >
         <Image source={{ uri: item.image }} style={styles.roomImage} />
         <View style={styles.cardContent}>
           <Text style={styles.roomTitle}>{item.room}</Text>
@@ -134,7 +137,7 @@ export default function MyStudyRoomBookings({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 

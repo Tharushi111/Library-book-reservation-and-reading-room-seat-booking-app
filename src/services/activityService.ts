@@ -485,3 +485,54 @@ export async function getReservationDetails(reservationId: string): Promise<Rese
     return null;
   }
 }
+
+/**
+ * Fetch Single Booking Details (READ)
+ */
+export async function getBookingDetails(bookingId: string): Promise<RoomBookingItem | null> {
+  try {
+    if (bookingId.startsWith("BKG-")) {
+      const fallback = FALLBACK_ROOM_BOOKINGS.find((b) => b.id === bookingId);
+      return fallback || null;
+    }
+
+    const { data, error } = await supabase
+      .from("room_bookings")
+      .select("*, rooms(*)")
+      .eq("id", bookingId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    const room = data.rooms || {};
+    const statusText =
+      data.status === "active"
+        ? "Confirmed"
+        : data.status === "completed"
+        ? "Completed"
+        : data.status === "cancelled"
+        ? "Cancelled"
+        : data.status || "Confirmed";
+
+    return {
+      id: data.id,
+      roomId: data.room_id,
+      room: room.name || "Study Room",
+      floor: room.room_type ? room.room_type.replace("_", " ").toUpperCase() : "Study Space",
+      seat: `Capacity: ${room.capacity || data.participants || 4}`,
+      date: formatDate(data.booking_date),
+      time: `${data.start_time || "10:00 AM"} - ${data.end_time || "12:00 PM"}`,
+      status: statusText,
+      image:
+        room.image_url ||
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300",
+      participants: data.participants,
+      isMock: false,
+    };
+  } catch (err) {
+    console.warn("Error fetching booking details:", err);
+    return null;
+  }
+}

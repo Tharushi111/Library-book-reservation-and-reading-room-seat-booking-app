@@ -7,6 +7,7 @@ import MyBookReservations from "../screens/activity/MyBookReservations";
 import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
 import BorrowedBooks from "../screens/activity/BorrowedBooks";
 import ReservationDetails from "../screens/activity/ReservationDetails";
+import BookingDetails from "../screens/activity/BookingDetails";
 import { RootStackParamList } from "./types";
 
 const Stack =
@@ -111,11 +112,7 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="BookingDetails">
-        {() => (
-          <PlaceholderScreen title="Booking Details" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen name="BookingDetails" component={BookingDetails} />
 
 
       {/*MEMBER 4 - ACTIVITY*/}
