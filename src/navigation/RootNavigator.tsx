@@ -9,6 +9,8 @@ import { RootStackParamList } from "./types";
 import BookCatalogueScreen from "../screens/books/bookCatalogueScreen";
 import BookDetailsScreen from "../screens/books/bookDetailsScreen";
 import ReservationConfirmationScreen from "../screens/books/reservationConfirmationScreen";
+import QueueConfirmationScreen from "../screens/books/queueConfirmationScreen";
+
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -16,7 +18,7 @@ const Stack =
 export default function RootNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="BookCatalogue"
+      initialRouteName="Login"
       screenOptions={{
         headerShown: false,
       }}
@@ -25,7 +27,7 @@ export default function RootNavigator() {
 
       <Stack.Screen name="Login">
         {() => (
-          <PlaceholderScreen title="Login" />
+          <PlaceholderScreen title="Login Screen" />
         )}
       </Stack.Screen>
 
@@ -70,11 +72,10 @@ export default function RootNavigator() {
         component={ReservationConfirmationScreen}
       />
 
-      <Stack.Screen name="QueueConfirmation">
-        {() => (
-          <PlaceholderScreen title="Queue Confirmation" />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="QueueConfirmation"
+        component={QueueConfirmationScreen}
+      />
 
 
       {/*MEMBER 3 - STUDY SPACES*/}

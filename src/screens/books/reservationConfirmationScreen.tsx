@@ -4,11 +4,12 @@ import React, {
 } from "react";
 
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
@@ -16,13 +17,34 @@ import {
   useRoute,
 } from "@react-navigation/native";
 
-import type { BookReservation } from "../../types";
+import {
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
+import type {
+  BookReservation,
+} from "../../types";
 
 import {
+  cancelReservation,
   getReservation,
 } from "../../services/bookService";
 
-import { COLORS } from "../../constants/colors";
+const THEME = {
+  white: "#FFFFFF",
+  blue: "#0057B8",
+  text: "#000000",
+  secondary: "#555555",
+
+  green: "#10C84A",
+  darkGreen: "#079134",
+  lightGreen: "#4DF577",
+
+  peach: "#FFD9C9",
+  peachBorder: "#FFAA83",
+
+  red: "#FF1F2D",
+};
 
 export default function ReservationConfirmationScreen() {
   const navigation =
@@ -31,9 +53,11 @@ export default function ReservationConfirmationScreen() {
   const route =
     useRoute<any>();
 
-  const {
-    reservationId,
-  } = route.params ?? {};
+  const insets =
+    useSafeAreaInsets();
+
+  const { reservationId } =
+    route.params ?? {};
 
   const [
     reservation,
@@ -43,14 +67,33 @@ export default function ReservationConfirmationScreen() {
       null
     );
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
+
+  const [
+    cancelling,
+    setCancelling,
+  ] =
+    useState(false);
+
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
 
   useEffect(() => {
     if (reservationId) {
       loadReservation();
     } else {
       setLoading(false);
+
+      setError(
+        "Reservation ID is missing."
+      );
     }
   }, [reservationId]);
 
@@ -58,6 +101,7 @@ export default function ReservationConfirmationScreen() {
     async () => {
       try {
         setLoading(true);
+        setError("");
 
         const data =
           await getReservation(
@@ -65,14 +109,123 @@ export default function ReservationConfirmationScreen() {
           );
 
         setReservation(data);
-      } catch (error) {
+      } catch (err: any) {
         console.error(
-          "Failed to load reservation:",
-          error
+          "Reservation error:",
+          err
+        );
+
+        setError(
+          err?.message ??
+            "Unable to load reservation."
         );
       } finally {
         setLoading(false);
       }
+    };
+
+  const goBack = () => {
+    navigation.goBack();
+  };
+
+  const performCancellation =
+    async () => {
+      try {
+        setCancelling(true);
+
+        await cancelReservation(
+          reservationId
+        );
+
+        Alert.alert(
+          "Reservation Cancelled",
+          "Your reservation has been cancelled successfully.",
+          [
+            {
+              text: "OK",
+
+              onPress: () => {
+                navigation.navigate(
+                  "BookCatalogue"
+                );
+              },
+            },
+          ]
+        );
+      } catch (err: any) {
+        console.error(
+          "Cancel reservation error:",
+          err
+        );
+
+        Alert.alert(
+          "Unable to Cancel",
+          err?.message ??
+            "Something went wrong while cancelling the reservation."
+        );
+      } finally {
+        setCancelling(false);
+      }
+    };
+
+  const handleCancelReservation =
+    () => {
+      Alert.alert(
+        "Cancel Reservation",
+        "Are you sure you want to cancel this reservation?",
+        [
+          {
+            text: "No",
+            style: "cancel",
+          },
+
+          {
+            text: "Yes, Cancel",
+            style: "destructive",
+            onPress:
+              performCancellation,
+          },
+        ]
+      );
+    };
+
+  const getRemainingTime =
+    () => {
+      if (
+        !reservation?.collectionDeadline
+      ) {
+        return "4h 50m";
+      }
+
+      const deadline =
+        new Date(
+          reservation.collectionDeadline
+        ).getTime();
+
+      const now =
+        new Date().getTime();
+
+      const diff =
+        deadline - now;
+
+      if (diff <= 0) {
+        return "Expired";
+      }
+
+      const totalMinutes =
+        Math.floor(
+          diff / (1000 * 60)
+        );
+
+      const hours =
+        Math.floor(
+          totalMinutes / 60
+        );
+
+      const minutes =
+        totalMinutes % 60;
+
+      return `${hours}h ${minutes}m`;
     };
 
   if (loading) {
@@ -80,10 +233,14 @@ export default function ReservationConfirmationScreen() {
       <View style={styles.center}>
         <ActivityIndicator
           size="large"
-          color={COLORS.primary}
+          color={THEME.blue}
         />
 
-        <Text style={styles.loadingText}>
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
           Loading reservation...
         </Text>
       </View>
@@ -93,241 +250,507 @@ export default function ReservationConfirmationScreen() {
   if (!reservation) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>
+        <Text
+          style={styles.errorTitle}
+        >
           Reservation not found
         </Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            navigation.navigate(
-              "BookCatalogue"
-            )
+        <Text
+          style={
+            styles.errorMessage
           }
         >
+          {error}
+        </Text>
+
+        <TouchableOpacity
+          style={
+            styles.errorButton
+          }
+          onPress={goBack}
+        >
           <Text
-            style={styles.buttonText}
+            style={
+              styles.errorButtonText
+            }
           >
-            Back to Catalogue
+            Go Back
           </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const book =
-    reservation.book;
-
   return (
-    <View style={styles.screen}>
-      <View style={styles.card}>
+    <View
+      style={[
+        styles.screen,
+        {
+          paddingTop:
+            insets.top,
+        },
+      ]}
+    >
+      {/* Back Button */}
 
-        {/* Success icon */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={goBack}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={styles.backIcon}
+        >
+          ‹
+        </Text>
+      </TouchableOpacity>
+
+      <View style={styles.content}>
+        {/* Success Circle */}
 
         <View
-          style={styles.successCircle}
+          style={
+            styles.successOuterCircle
+          }
         >
-          <Text
-            style={styles.checkmark}
+          <View
+            style={
+              styles.successInnerCircle
+            }
           >
-            ✓
-          </Text>
+            <Text
+              style={
+                styles.checkmark
+              }
+            >
+              ✓
+            </Text>
+          </View>
         </View>
 
         {/* Title */}
 
         <Text style={styles.title}>
-          Reservation Successful
+          Reservation Confirmed
         </Text>
 
-        <Text style={styles.subtitle}>
-          Your book has been successfully
-          reserved.
-        </Text>
+        {/* Book Name */}
 
-        {/* Book */}
-
-        {book && (
-          <View style={styles.bookInfo}>
-            <Text
-              style={styles.bookTitle}
-            >
-              {book.title}
-            </Text>
-
-            <Text
-              style={styles.author}
-            >
-              {book.author}
-            </Text>
-          </View>
-        )}
-
-        {/* Deadline */}
-
-        <View
-          style={styles.deadlineBox}
+        <Text
+          style={styles.subtitle}
         >
           <Text
-            style={styles.deadlineLabel}
+            style={
+              styles.bookName
+            }
           >
-            Collection deadline
+            {reservation.book
+              ?.title ??
+              "Your book"}
           </Text>
 
           <Text
-            style={styles.deadline}
+            style={
+              styles.subtitleLight
+            }
           >
-            {reservation.collectionDeadline
-              ? new Date(
-                  reservation.collectionDeadline
-                ).toLocaleString()
-              : "48 hours"}
+            {" "}
+            is being held for you
           </Text>
-        </View>
+        </Text>
 
-        {/* Back */}
+        {/* Collection Box */}
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            navigation.navigate(
-              "BookCatalogue"
-            )
+        <View
+          style={
+            styles.collectionBox
           }
         >
           <Text
-            style={styles.buttonText}
+            style={
+              styles.collectionLabel
+            }
           >
-            Back to Catalogue
+            Collect within
           </Text>
-        </TouchableOpacity>
 
+          <Text
+            style={
+              styles.collectionTime
+            }
+          >
+            {getRemainingTime()}
+          </Text>
+
+          <Text
+            style={
+              styles.collectionLocation
+            }
+          >
+            Pickup desk, 1st Floor
+          </Text>
+        </View>
+
+        {/* Cancel Button */}
+
+        <TouchableOpacity
+          style={[
+            styles.cancelButton,
+
+            cancelling &&
+              styles.cancelButtonDisabled,
+          ]}
+          onPress={
+            handleCancelReservation
+          }
+          disabled={cancelling}
+          activeOpacity={0.8}
+        >
+          {cancelling ? (
+            <ActivityIndicator
+              size="small"
+              color={THEME.red}
+            />
+          ) : (
+            <Text
+              style={
+                styles.cancelButtonText
+              }
+            >
+              Cancel Reservation
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
+const styles =
+  StyleSheet.create({
+    screen: {
+      flex: 1,
 
-  center: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
+      backgroundColor:
+        THEME.white,
+    },
 
-  loadingText: {
-    marginTop: 10,
-    color: COLORS.textSecondary,
-  },
+    center: {
+      flex: 1,
 
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginBottom: 20,
-  },
+      backgroundColor:
+        THEME.white,
 
-  card: {
-    width: "100%",
-    backgroundColor: COLORS.background,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-  },
+      alignItems:
+        "center",
 
-  successCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#EAF8EF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 18,
-  },
+      justifyContent:
+        "center",
 
-  checkmark: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: COLORS.available,
-  },
+      paddingHorizontal:
+        30,
+    },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-  },
+    loadingText: {
+      marginTop: 12,
 
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 21,
-  },
+      fontSize: 13,
 
-  bookInfo: {
-    width: "100%",
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#F5F7FA",
-  },
+      color:
+        THEME.secondary,
+    },
 
-  bookTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+    backButton: {
+      width: 50,
 
-  author: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 5,
-  },
+      height: 48,
 
-  deadlineBox: {
-    width: "100%",
-    marginTop: 14,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#FFF5E8",
-  },
+      marginLeft: 22,
 
-  deadlineLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
+      marginTop: 5,
 
-  deadline: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginTop: 5,
-  },
+      justifyContent:
+        "center",
 
-  button: {
-    width: "100%",
-    height: 50,
-    marginTop: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      alignItems:
+        "flex-start",
+    },
 
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-});
+    backIcon: {
+      color:
+        THEME.blue,
+
+      fontSize: 32,
+
+      fontWeight:
+        "700",
+
+      lineHeight: 34,
+    },
+
+    content: {
+      flex: 1,
+
+      alignItems:
+        "center",
+
+      paddingHorizontal:
+        36,
+
+      paddingTop: 33,
+    },
+
+    successOuterCircle: {
+      width: 104,
+
+      height: 104,
+
+      borderRadius: 52,
+
+      backgroundColor:
+        THEME.green,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderWidth: 3,
+
+      borderColor:
+        THEME.lightGreen,
+
+      shadowColor: "#000",
+
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+
+      shadowOpacity: 0.2,
+
+      shadowRadius: 4,
+
+      elevation: 6,
+
+      marginBottom: 45,
+    },
+
+    successInnerCircle: {
+      width: 96,
+
+      height: 96,
+
+      borderRadius: 48,
+
+      backgroundColor:
+        THEME.green,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      borderBottomWidth: 5,
+
+      borderBottomColor:
+        THEME.darkGreen,
+    },
+
+    checkmark: {
+      color:
+        THEME.white,
+
+      fontSize: 63,
+
+      fontWeight:
+        "800",
+
+      lineHeight: 68,
+
+      transform: [
+        {
+          rotate: "-4deg",
+        },
+      ],
+    },
+
+    title: {
+      color:
+        THEME.text,
+
+      fontSize: 22,
+
+      fontWeight:
+        "800",
+
+      textAlign:
+        "center",
+
+      letterSpacing:
+        -0.5,
+    },
+
+    subtitle: {
+      marginTop: 3,
+
+      fontSize: 13,
+
+      textAlign:
+        "center",
+    },
+
+    bookName: {
+      color:
+        THEME.text,
+    },
+
+    subtitleLight: {
+      color: "#7A7A7A",
+    },
+
+    collectionBox: {
+      width: 240,
+
+      height: 122,
+
+      marginTop: 35,
+
+      backgroundColor:
+        THEME.peach,
+
+      borderWidth: 1,
+
+      borderColor:
+        THEME.peachBorder,
+
+      borderRadius: 8,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+    },
+
+    collectionLabel: {
+      color:
+        THEME.text,
+
+      fontSize: 11,
+
+      marginBottom: 2,
+    },
+
+    collectionTime: {
+      color:
+        THEME.text,
+
+      fontSize: 18,
+
+      fontWeight:
+        "800",
+
+      lineHeight: 22,
+    },
+
+    collectionLocation: {
+      marginTop: 4,
+
+      color:
+        THEME.text,
+
+      fontSize: 11,
+    },
+
+    cancelButton: {
+      width: 178,
+
+      height: 31,
+
+      marginTop: 45,
+
+      borderWidth: 1.3,
+
+      borderColor:
+        THEME.red,
+
+      borderRadius: 7,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
+      backgroundColor:
+        THEME.white,
+    },
+
+    cancelButtonDisabled: {
+      opacity: 0.55,
+    },
+
+    cancelButtonText: {
+      color:
+        THEME.red,
+
+      fontSize: 11,
+
+      fontWeight:
+        "700",
+    },
+
+    errorTitle: {
+      fontSize: 20,
+
+      fontWeight:
+        "700",
+
+      color:
+        THEME.text,
+    },
+
+    errorMessage: {
+      marginTop: 8,
+
+      color:
+        THEME.secondary,
+
+      fontSize: 13,
+
+      textAlign:
+        "center",
+    },
+
+    errorButton: {
+      marginTop: 20,
+
+      paddingHorizontal:
+        24,
+
+      height: 42,
+
+      borderRadius: 7,
+
+      backgroundColor:
+        THEME.blue,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+    },
+
+    errorButtonText: {
+      color:
+        THEME.white,
+
+      fontWeight:
+        "700",
+    },
+  });
