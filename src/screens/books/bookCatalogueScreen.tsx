@@ -109,10 +109,7 @@ export default function BookCatalogueScreen() {
   ] =
     useState(true);
 
-  /* ================================================== */
   /* LOAD BOOKS                                         */
-  /* ================================================== */
-
   const loadBooks =
     useCallback(
       async (
@@ -162,10 +159,7 @@ export default function BookCatalogueScreen() {
       []
     );
 
-  /* ================================================== */
   /* LOAD WHEN CATEGORY CHANGES                         */
-  /* ================================================== */
-
   useEffect(
     () => {
       loadBooks(
@@ -178,10 +172,7 @@ export default function BookCatalogueScreen() {
     ]
   );
 
-  /* ================================================== */
   /* REFRESH WHEN SCREEN GETS FOCUS                     */
-  /* ================================================== */
-
   useFocusEffect(
     useCallback(
       () => {
@@ -197,10 +188,7 @@ export default function BookCatalogueScreen() {
     )
   );
 
-  /* ================================================== */
   /* REALTIME BOOK AVAILABILITY                         */
-  /* ================================================== */
-
   /*
    * If another user reserves or cancels a book,
    * Supabase sends an UPDATE event from the books table.
@@ -210,13 +198,13 @@ export default function BookCatalogueScreen() {
    * Example:
    *
    * User 1 reserves book
-   *      ↓
+   *      |
    * books.availability_status = borrowed
-   *      ↓
+   *      |
    * User 2 receives realtime event
-   *      ↓
+   *      |
    * Catalogue refreshes
-   *      ↓
+   *      |
    * User 2 sees "Borrowed"
    */
 
@@ -242,10 +230,7 @@ export default function BookCatalogueScreen() {
     ]
   );
 
-  /* ================================================== */
   /* SEARCH                                             */
-  /* ================================================== */
-
   const submitSearch =
     () => {
       const value =
@@ -264,10 +249,7 @@ export default function BookCatalogueScreen() {
       );
     };
 
-  /* ================================================== */
   /* RENDER BOOK                                        */
-  /* ================================================== */
-
   const renderBook = ({
     item,
   }: {
@@ -390,20 +372,14 @@ export default function BookCatalogueScreen() {
     );
   };
 
-  /* ================================================== */
   /* UI                                                 */
-  /* ================================================== */
-
   return (
     <View
       style={
         styles.screen
       }
     >
-      {/* =============================================== */}
       {/* HEADER                                          */}
-      {/* =============================================== */}
-
       <View
         style={[
           styles.header,
@@ -530,10 +506,7 @@ export default function BookCatalogueScreen() {
         />
       </View>
 
-      {/* =============================================== */}
       {/* LOADING                                         */}
-      {/* =============================================== */}
-
       {loading ? (
         <View
           style={
@@ -557,10 +530,7 @@ export default function BookCatalogueScreen() {
         </View>
       ) : books.length ===
         0 ? (
-        /* ============================================= */
         /* EMPTY                                         */
-        /* ============================================= */
-
         <View
           style={
             styles.emptyContainer
@@ -584,10 +554,7 @@ export default function BookCatalogueScreen() {
           </Text>
         </View>
       ) : (
-        /* ============================================= */
         /* BOOK LIST                                     */
-        /* ============================================= */
-
         <FlatList
           data={
             books
@@ -618,10 +585,7 @@ export default function BookCatalogueScreen() {
   );
 }
 
-/* ================================================== */
 /* STYLES                                             */
-/* ================================================== */
-
 const styles =
   StyleSheet.create({
     screen: {
@@ -631,10 +595,7 @@ const styles =
         THEME.background,
     },
 
-    /* ================================================== */
     /* HEADER                                             */
-    /* ================================================== */
-
     header: {
       paddingHorizontal:
         20,
@@ -660,10 +621,7 @@ const styles =
         12,
     },
 
-    /* ================================================== */
     /* SEARCH                                             */
-    /* ================================================== */
-
     searchBar: {
       height:
         52,
@@ -765,10 +723,7 @@ const styles =
         THEME.text,
     },
 
-    /* ================================================== */
     /* CATEGORY                                           */
-    /* ================================================== */
-
     categoryList: {
       gap:
         10,
@@ -815,10 +770,7 @@ const styles =
         "#FFFFFF",
     },
 
-    /* ================================================== */
     /* LOADING                                            */
-    /* ================================================== */
-
     loadingContainer: {
       flex:
         1,
@@ -841,10 +793,7 @@ const styles =
         THEME.textSecondary,
     },
 
-    /* ================================================== */
     /* EMPTY                                              */
-    /* ================================================== */
-
     emptyContainer: {
       flex:
         1,
@@ -884,10 +833,7 @@ const styles =
         "center",
     },
 
-    /* ================================================== */
     /* BOOK LIST                                          */
-    /* ================================================== */
-
     bookList: {
       paddingHorizontal:
         20,
@@ -999,10 +945,7 @@ const styles =
         2,
     },
 
-    /* ================================================== */
     /* STATUS                                             */
-    /* ================================================== */
-
     statusBadge: {
       marginTop:
         8,

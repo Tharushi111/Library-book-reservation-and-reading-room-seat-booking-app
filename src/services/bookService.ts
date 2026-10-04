@@ -7,10 +7,7 @@ import type {
   BookReservation,
 } from "../types";
 
-/* ================================================== */
-/* MAPPERS                                            */
-/* ================================================== */
-
+/* MAPPERS */
 function mapBook(
   row: any,
   availabilityStatus?: BookAvailabilityStatus
@@ -90,10 +87,7 @@ function mapQueueEntry(
   };
 }
 
-/* ================================================== */
-/* AUTH                                               */
-/* ================================================== */
-
+/* AUTH */
 async function getCurrentUserId(): Promise<string> {
   const {
     data: { user },
@@ -113,10 +107,7 @@ async function getCurrentUserId(): Promise<string> {
   return user.id;
 }
 
-/* ================================================== */
-/* UPDATE GLOBAL BOOK STATUS                          */
-/* ================================================== */
-
+/* UPDATE GLOBAL BOOK STATUS */
 async function updateBookAvailability(
   bookId: string,
   status: BookAvailabilityStatus
@@ -140,10 +131,7 @@ async function updateBookAvailability(
   }
 }
 
-/* ================================================== */
-/* AVAILABILITY                                       */
-/* ================================================== */
-
+/* AVAILABILITY*/
 /*
  * IMPORTANT:
  *
@@ -178,10 +166,8 @@ async function getBookAvailability(
   ) as BookAvailabilityStatus;
 }
 
-/* ================================================== */
-/* CATALOGUE                                          */
-/* ================================================== */
 
+/* CATALOGUE */
 export async function getCatalogue(
   category?: string
 ): Promise<Book[]> {
@@ -215,13 +201,6 @@ export async function getCatalogue(
     return [];
   }
 
-  /*
-   * No book_reservations query here anymore.
-   *
-   * availability_status is global and comes
-   * directly from books.
-   */
-
   return data.map(
     (row) =>
       mapBook(
@@ -232,10 +211,8 @@ export async function getCatalogue(
   );
 }
 
-/* ================================================== */
-/* GET BOOK                                           */
-/* ================================================== */
 
+/* GET BOOK*/
 export async function getBookById(
   bookId: string
 ): Promise<Book> {
@@ -259,10 +236,8 @@ export async function getBookById(
   );
 }
 
-/* ================================================== */
-/* SEARCH                                             */
-/* ================================================== */
 
+/* SEARCH*/
 export async function searchBooks(
   query: string
 ): Promise<Book[]> {
@@ -306,10 +281,8 @@ export async function searchBooks(
   );
 }
 
-/* ================================================== */
-/* RESERVE BOOK                                       */
-/* ================================================== */
 
+/* RESERVE BOOK*/
 export async function reserveBook(
   bookId: string
 ): Promise<BookReservation> {
@@ -326,10 +299,7 @@ export async function reserveBook(
     userId
   );
 
-  /* -------------------------------------------------- */
-  /* CHECK BOOK                                         */
-  /* -------------------------------------------------- */
-
+  /* CHECK BOOK*/
   const {
     data: book,
     error: bookError,
@@ -351,10 +321,7 @@ export async function reserveBook(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* CHECK GLOBAL AVAILABILITY                          */
-  /* -------------------------------------------------- */
-
+  /* CHECK GLOBAL AVAILABILITY */
   if (
     book.availability_status ===
     "borrowed"
@@ -364,10 +331,7 @@ export async function reserveBook(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* CHECK USER'S EXISTING RESERVATION                  */
-  /* -------------------------------------------------- */
-
+  /* CHECK USER'S EXISTING RESERVATION */
   const {
     data: existingReservation,
     error: existingError,
@@ -392,10 +356,7 @@ export async function reserveBook(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* CREATE DEADLINE                                    */
-  /* -------------------------------------------------- */
-
+  /* CREATE DEADLINE */
   const reservedAt =
     new Date();
 
@@ -408,10 +369,7 @@ export async function reserveBook(
           1000
     );
 
-  /* -------------------------------------------------- */
-  /* INSERT RESERVATION                                 */
-  /* -------------------------------------------------- */
-
+  /* INSERT RESERVATION */
   const {
     data: reservation,
     error: insertError,
@@ -459,10 +417,7 @@ export async function reserveBook(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* GLOBAL STATUS -> BORROWED                          */
-  /* -------------------------------------------------- */
-
+   /* GLOBAL STATUS -> BORROWED */
   try {
     await updateBookAvailability(
       bookId,
@@ -489,10 +444,7 @@ export async function reserveBook(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* RETURN FULL RESERVATION                            */
-  /* -------------------------------------------------- */
-
+  /* RETURN FULL RESERVATION */
   const {
     data: fullReservation,
     error: fetchError,
@@ -529,10 +481,7 @@ export async function reserveBook(
   );
 }
 
-/* ================================================== */
-/* GET RESERVATION                                    */
-/* ================================================== */
-
+/* GET RESERVATION */
 export async function getReservation(
   reservationId: string
 ): Promise<BookReservation> {
@@ -566,20 +515,14 @@ export async function getReservation(
   );
 }
 
-/* ================================================== */
-/* CANCEL RESERVATION                                 */
-/* ================================================== */
-
+/* CANCEL RESERVATION */
 export async function cancelReservation(
   reservationId: string
 ): Promise<BookReservation> {
   const userId =
     await getCurrentUserId();
 
-  /* -------------------------------------------------- */
-  /* GET RESERVATION                                    */
-  /* -------------------------------------------------- */
-
+  /* GET RESERVATION */
   const {
     data: existingReservation,
     error: fetchError,
@@ -626,10 +569,7 @@ export async function cancelReservation(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* CANCEL RESERVATION                                 */
-  /* -------------------------------------------------- */
-
+  /* CANCEL RESERVATION */
   const {
     data: cancelledReservation,
     error: updateError,
@@ -665,10 +605,7 @@ export async function cancelReservation(
     );
   }
 
-  /* -------------------------------------------------- */
-  /* CHECK ACTIVE BORROW                                */
-  /* -------------------------------------------------- */
-
+  /* CHECK ACTIVE BORROW */
   const {
     data: activeBorrow,
     error: borrowError,
@@ -725,10 +662,7 @@ export async function cancelReservation(
   });
 }
 
-/* ================================================== */
-/* QUEUE                                              */
-/* ================================================== */
-
+/* QUEUE */
 export async function joinQueue(
   bookId: string,
   userId?: string
@@ -854,10 +788,7 @@ export async function joinQueue(
   return entry;
 }
 
-/* ================================================== */
-/* GET QUEUE ENTRY                                    */
-/* ================================================== */
-
+/* GET QUEUE ENTRY */
 export async function getQueueEntry(
   bookId: string
 ): Promise<BookQueueEntry | null> {
@@ -932,10 +863,7 @@ export async function getQueueEntry(
   });
 }
 
-/* ================================================== */
-/* QUEUE TOTAL                                        */
-/* ================================================== */
-
+/* QUEUE TOTAL */
 export async function getQueueTotal(
   bookId: string
 ): Promise<number> {
@@ -964,10 +892,7 @@ export async function getQueueTotal(
   return count ?? 0;
 }
 
-/* ================================================== */
-/* QUEUE NOTIFICATION                                 */
-/* ================================================== */
-
+/* QUEUE NOTIFICATION */
 export async function setQueueNotify(
   queueEntryId: string,
   enabled: boolean
@@ -997,10 +922,7 @@ export async function setQueueNotify(
   }
 }
 
-/* ================================================== */
-/* REALTIME QUEUE                                     */
-/* ================================================== */
-
+/* REALTIME QUEUE */
 export function subscribeToBookQueue(
   bookId: string,
   callback: () => void
@@ -1037,10 +959,7 @@ export function subscribeToBookQueue(
   };
 }
 
-/* ================================================== */
-/* REALTIME BOOK AVAILABILITY                         */
-/* ================================================== */
-
+/* REALTIME BOOK AVAILABILITY */
 /*
  * Catalogue can use this listener so if User 1
  * reserves a book while User 2's catalogue is open,

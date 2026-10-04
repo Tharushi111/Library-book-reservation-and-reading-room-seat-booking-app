@@ -123,9 +123,7 @@ export default function QueueConfirmationScreen() {
   ] =
     useState("");
 
-  /* ================================================== */
-  /* LOAD QUEUE                                         */
-  /* ================================================== */
+  /* LOAD QUEUE */
 
   const loadQueueInformation =
     useCallback(
@@ -192,9 +190,7 @@ export default function QueueConfirmationScreen() {
       ]
     );
 
-  /* ================================================== */
-  /* INITIAL LOAD                                       */
-  /* ================================================== */
+  /* INITIAL LOAD */
 
   useEffect(
     () => {
@@ -207,10 +203,7 @@ export default function QueueConfirmationScreen() {
     ]
   );
 
-  /* ================================================== */
   /* REFRESH WHEN SCREEN IS OPENED                      */
-  /* ================================================== */
-
   useFocusEffect(
     useCallback(
       () => {
@@ -222,10 +215,7 @@ export default function QueueConfirmationScreen() {
     )
   );
 
-  /* ================================================== */
   /* SUPABASE REALTIME                                  */
-  /* ================================================== */
-
   useEffect(
     () => {
       if (!bookId) {
@@ -250,10 +240,7 @@ export default function QueueConfirmationScreen() {
     ]
   );
 
-  /* ================================================== */
   /* JOIN QUEUE                                         */
-  /* ================================================== */
-
   const handleJoinQueue =
     async () => {
       try {
@@ -297,10 +284,7 @@ export default function QueueConfirmationScreen() {
       }
     };
 
-  /* ================================================== */
   /* NOTIFY CHECKBOX                                    */
-  /* ================================================== */
-
   const handleToggleNotify =
     async () => {
       if (
@@ -359,10 +343,7 @@ export default function QueueConfirmationScreen() {
       }
     };
 
-  /* ================================================== */
   /* LOADING                                            */
-  /* ================================================== */
-
   if (loading) {
     return (
       <SafeAreaView
@@ -399,10 +380,7 @@ export default function QueueConfirmationScreen() {
     );
   }
 
-  /* ================================================== */
   /* BOOK ERROR                                         */
-  /* ================================================== */
-
   if (!book) {
     return (
       <SafeAreaView
@@ -432,10 +410,7 @@ export default function QueueConfirmationScreen() {
     );
   }
 
-  /* ================================================== */
   /* BEFORE USER JOINS                                  */
-  /* ================================================== */
-
   if (!queueEntry) {
     return (
       <SafeAreaView
@@ -582,10 +557,7 @@ export default function QueueConfirmationScreen() {
     );
   }
 
-  /* ================================================== */
   /* QUEUE CONFIRMATION                                 */
-  /* ================================================== */
-
   return (
     <SafeAreaView
       style={
@@ -803,10 +775,7 @@ export default function QueueConfirmationScreen() {
   );
 }
 
-/* ================================================== */
 /* STYLES                                             */
-/* ================================================== */
-
 const styles =
   StyleSheet.create({
     container: {
@@ -836,10 +805,7 @@ const styles =
         THEME.textSecondary,
     },
 
-    /* ================================================== */
     /* MAIN CONTENT                                       */
-    /* ================================================== */
-
     content: {
       flexGrow: 1,
 
@@ -873,10 +839,7 @@ const styles =
         "center",
     },
 
-    /* ================================================== */
     /* BACK BUTTON                                        */
-    /* ================================================== */
-
     backButton: {
       width: 46,
 
@@ -895,10 +858,7 @@ const styles =
         -10,
     },
 
-    /* ================================================== */
     /* ICON                                               */
-    /* ================================================== */
-
     iconCircle: {
       width: 104,
 
@@ -926,10 +886,7 @@ const styles =
         46,
     },
 
-    /* ================================================== */
     /* TITLE                                              */
-    /* ================================================== */
-
     title: {
       fontSize: 23,
 
@@ -945,10 +902,7 @@ const styles =
         "center",
     },
 
-    /* ================================================== */
     /* POSITION                                           */
-    /* ================================================== */
-
     positionRow: {
       marginTop: 3,
 
@@ -987,10 +941,7 @@ const styles =
         THEME.textSecondary,
     },
 
-    /* ================================================== */
     /* WAIT CARD                                          */
-    /* ================================================== */
-
     waitCard: {
       height: 122,
 
@@ -1035,10 +986,7 @@ const styles =
         THEME.text,
     },
 
-    /* ================================================== */
     /* NOTIFY                                             */
-    /* ================================================== */
-
     notifyRow: {
       marginTop:
         21,
@@ -1107,10 +1055,7 @@ const styles =
         THEME.textSecondary,
     },
 
-    /* ================================================== */
     /* BUTTON                                             */
-    /* ================================================== */
-
     mainButton: {
       height: 48,
 
@@ -1148,10 +1093,7 @@ const styles =
         0.65,
     },
 
-    /* ================================================== */
     /* ERROR                                              */
-    /* ================================================== */
-
     errorText: {
       marginTop:
         15,
@@ -1166,10 +1108,7 @@ const styles =
         13,
     },
 
-    /* ================================================== */
     /* PRE-JOIN                                           */
-    /* ================================================== */
-
     confirmTitle: {
       fontSize: 24,
 

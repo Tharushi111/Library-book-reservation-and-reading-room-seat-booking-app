@@ -12,8 +12,6 @@ import ReservationConfirmationScreen from "../screens/books/reservationConfirmat
 import QueueConfirmationScreen from "../screens/books/queueConfirmationScreen";
 
 
-import LoginScreen from "../screens/auth/LoginScreen";
-
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
 
@@ -27,10 +25,11 @@ export default function RootNavigator() {
     >
       {/*MEMBER 1 - CORE ACCESS*/}
 
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-      />
+      <Stack.Screen name="Login">
+        {() => (
+          <PlaceholderScreen title="Login Screen" />
+        )}
+      </Stack.Screen>
 
       <Stack.Screen
         name="MainTabs"

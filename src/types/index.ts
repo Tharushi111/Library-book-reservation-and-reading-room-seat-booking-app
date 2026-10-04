@@ -23,10 +23,8 @@ export interface UserProfile {
   role: "student" | "staff";
 }
 
-/* -------------------------------------------------- */
-/* BOOK RESERVATIONS                                  */
-/* -------------------------------------------------- */
 
+/* BOOK RESERVATIONS                                  */
 export type BookReservationStatus =
   | "reserved"
   | "collected"
@@ -46,10 +44,7 @@ export interface BookReservation {
   book?: Book;
 }
 
-/* -------------------------------------------------- */
 /* BOOK QUEUE                                         */
-/* -------------------------------------------------- */
-
 export type BookQueueStatus =
   | "waiting"
   | "notified"
@@ -73,10 +68,8 @@ export interface BookQueueEntry {
   book?: Book;
 }
 
-/* -------------------------------------------------- */
-/* ROOMS                                              */
-/* -------------------------------------------------- */
 
+/* ROOMS                                              */
 export type RoomType =
   | "study_room"
   | "conference_room"
@@ -96,10 +89,7 @@ export interface Room {
   status: RoomStatus;
 }
 
-/* -------------------------------------------------- */
 /* ROOM BOOKINGS                                      */
-/* -------------------------------------------------- */
-
 export type RoomBookingStatus =
   | "active"
   | "completed"
@@ -122,10 +112,7 @@ export interface RoomBooking {
   room?: Room;
 }
 
-/* -------------------------------------------------- */
 /* BORROWED BOOKS                                     */
-/* -------------------------------------------------- */
-
 export interface BorrowedBook {
   id: string;
   userId: string;
@@ -143,10 +130,7 @@ export interface BorrowedBook {
   book?: Book;
 }
 
-/* -------------------------------------------------- */
 /* NOTIFICATIONS                                      */
-/* -------------------------------------------------- */
-
 export type NotificationType =
   | "book_available"
   | "collection_reminder"
