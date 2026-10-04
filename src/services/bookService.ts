@@ -269,43 +269,73 @@ export async function cancelReservation(
 /**
  * Join the waiting queue for a book.
  */
+/** Join the queue for a borrowed book */
 export async function joinQueue(
-  bookId: string
+  bookId: string,
+  userId: string
 ): Promise<BookQueueEntry> {
-  const userId = await getCurrentUserId();
+  // Check that the book currently exists and is borrowed
+  const book = await getBookById(bookId);
 
-  // Count existing waiting users.
-  const {
-    count,
-    error: countError,
-  } = await supabase
-    .from("book_queue")
-    .select("*", {
-      count: "exact",
-      head: true,
-    })
-    .eq("book_id", bookId)
-    .eq("status", "waiting");
+  if (book.availabilityStatus !== "borrowed") {
+    throw new Error(
+      "This book is not currently borrowed, so you cannot join its queue."
+    );
+  }
+
+  // Check whether this user is already waiting for this book
+  const { data: existingEntry, error: existingError } =
+    await supabase
+      .from("book_queue")
+      .select("*")
+      .eq("book_id", bookId)
+      .eq("user_id", userId)
+      .eq("status", "waiting")
+      .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existingEntry) {
+    throw new Error(
+      "You are already in the queue for this book."
+    );
+  }
+
+  // Count current people waiting
+  const { count, error: countError } =
+    await supabase
+      .from("book_queue")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("book_id", bookId)
+      .eq("status", "waiting");
 
   if (countError) {
     throw countError;
   }
 
+  // New user goes to the end of the queue
   const nextPosition = (count ?? 0) + 1;
 
-  // Add user to queue.
+  // Simple estimated wait:
+  // approximately 7 days per person ahead
+  const estimatedWaitDays =
+    Math.max(0, nextPosition - 1) * 7;
+
   const { data, error } = await supabase
     .from("book_queue")
     .insert({
       book_id: bookId,
       user_id: userId,
       queue_position: nextPosition,
+      estimated_wait_days: estimatedWaitDays,
       status: "waiting",
     })
-    .select(`
-      *,
-      book:books(*)
-    `)
+    .select("*, book:books(*)")
     .single();
 
   if (error) {

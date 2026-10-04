@@ -1,12 +1,15 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
 
 import PlaceholderScreen from "../screens/PlaceholderScreen";
-import { BottomTabParamList } from "./types";
+import { BottomTabParamList, RootStackParamList } from "./types";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 export default function BottomTabNavigator() {
+  const navigation = useNavigation();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -17,7 +20,16 @@ export default function BottomTabNavigator() {
         {() => <PlaceholderScreen title="Home" />}
       </Tab.Screen>
 
-      <Tab.Screen name="Books">
+      <Tab.Screen
+        name="Books"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+
+            navigation.navigate("BookCatalogue" as never);
+          },
+        }}
+      >
         {() => <PlaceholderScreen title="Books" />}
       </Tab.Screen>
 

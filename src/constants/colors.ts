@@ -13,6 +13,8 @@ export const COLORS = {
   success: "#22C55E",
   warning: "#F59E0B",
   danger: "#EF4444",
+  error: "#DC2626",
+  info: "#2563EB",
 
   available: "#22C55E",
   borrowed: "#EF4444",
