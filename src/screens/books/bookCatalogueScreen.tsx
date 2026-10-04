@@ -30,6 +30,7 @@ import type {
 
 import {
   getCatalogue,
+  subscribeToBookAvailability,
 } from "../../services/bookService";
 
 const CATEGORIES = [
@@ -108,6 +109,10 @@ export default function BookCatalogueScreen() {
   ] =
     useState(true);
 
+  /* ================================================== */
+  /* LOAD BOOKS                                         */
+  /* ================================================== */
+
   const loadBooks =
     useCallback(
       async (
@@ -157,6 +162,10 @@ export default function BookCatalogueScreen() {
       []
     );
 
+  /* ================================================== */
+  /* LOAD WHEN CATEGORY CHANGES                         */
+  /* ================================================== */
+
   useEffect(
     () => {
       loadBooks(
@@ -168,6 +177,10 @@ export default function BookCatalogueScreen() {
       loadBooks,
     ]
   );
+
+  /* ================================================== */
+  /* REFRESH WHEN SCREEN GETS FOCUS                     */
+  /* ================================================== */
 
   useFocusEffect(
     useCallback(
@@ -183,6 +196,55 @@ export default function BookCatalogueScreen() {
       ]
     )
   );
+
+  /* ================================================== */
+  /* REALTIME BOOK AVAILABILITY                         */
+  /* ================================================== */
+
+  /*
+   * If another user reserves or cancels a book,
+   * Supabase sends an UPDATE event from the books table.
+   *
+   * Then we refresh the catalogue.
+   *
+   * Example:
+   *
+   * User 1 reserves book
+   *      ↓
+   * books.availability_status = borrowed
+   *      ↓
+   * User 2 receives realtime event
+   *      ↓
+   * Catalogue refreshes
+   *      ↓
+   * User 2 sees "Borrowed"
+   */
+
+  useEffect(
+    () => {
+      const unsubscribe =
+        subscribeToBookAvailability(
+          () => {
+            loadBooks(
+              category,
+              false
+            );
+          }
+        );
+
+      return () => {
+        unsubscribe();
+      };
+    },
+    [
+      category,
+      loadBooks,
+    ]
+  );
+
+  /* ================================================== */
+  /* SEARCH                                             */
+  /* ================================================== */
 
   const submitSearch =
     () => {
@@ -201,6 +263,10 @@ export default function BookCatalogueScreen() {
         }
       );
     };
+
+  /* ================================================== */
+  /* RENDER BOOK                                        */
+  /* ================================================== */
 
   const renderBook = ({
     item,
@@ -324,12 +390,20 @@ export default function BookCatalogueScreen() {
     );
   };
 
+  /* ================================================== */
+  /* UI                                                 */
+  /* ================================================== */
+
   return (
     <View
       style={
         styles.screen
       }
     >
+      {/* =============================================== */}
+      {/* HEADER                                          */}
+      {/* =============================================== */}
+
       <View
         style={[
           styles.header,
@@ -341,6 +415,8 @@ export default function BookCatalogueScreen() {
           },
         ]}
       >
+        {/* Title */}
+
         <Text
           style={
             styles.title
@@ -348,6 +424,8 @@ export default function BookCatalogueScreen() {
         >
           Catalogue
         </Text>
+
+        {/* Search */}
 
         <View
           style={
@@ -380,7 +458,9 @@ export default function BookCatalogueScreen() {
             placeholderTextColor={
               THEME.textSecondary
             }
-            value={query}
+            value={
+              query
+            }
             onChangeText={
               setQuery
             }
@@ -391,6 +471,8 @@ export default function BookCatalogueScreen() {
             autoCapitalize="none"
           />
         </View>
+
+        {/* Categories */}
 
         <FlatList
           horizontal
@@ -448,6 +530,10 @@ export default function BookCatalogueScreen() {
         />
       </View>
 
+      {/* =============================================== */}
+      {/* LOADING                                         */}
+      {/* =============================================== */}
+
       {loading ? (
         <View
           style={
@@ -471,6 +557,10 @@ export default function BookCatalogueScreen() {
         </View>
       ) : books.length ===
         0 ? (
+        /* ============================================= */
+        /* EMPTY                                         */
+        /* ============================================= */
+
         <View
           style={
             styles.emptyContainer
@@ -494,8 +584,14 @@ export default function BookCatalogueScreen() {
           </Text>
         </View>
       ) : (
+        /* ============================================= */
+        /* BOOK LIST                                     */
+        /* ============================================= */
+
         <FlatList
-          data={books}
+          data={
+            books
+          }
           keyExtractor={(
             item
           ) =>
@@ -522,35 +618,55 @@ export default function BookCatalogueScreen() {
   );
 }
 
+/* ================================================== */
+/* STYLES                                             */
+/* ================================================== */
+
 const styles =
   StyleSheet.create({
     screen: {
       flex: 1,
+
       backgroundColor:
         THEME.background,
     },
 
+    /* ================================================== */
+    /* HEADER                                             */
+    /* ================================================== */
+
     header: {
       paddingHorizontal:
         20,
+
       paddingBottom:
         8,
     },
 
     title: {
-      fontSize: 26,
+      fontSize:
+        26,
+
       fontWeight:
         "800",
+
       color:
         THEME.title,
+
       marginBottom:
         20,
+
       marginLeft:
         12,
     },
 
+    /* ================================================== */
+    /* SEARCH                                             */
+    /* ================================================== */
+
     searchBar: {
-      height: 52,
+      height:
+        52,
 
       flexDirection:
         "row",
@@ -572,8 +688,12 @@ const styles =
     },
 
     searchIcon: {
-      width: 24,
-      height: 24,
+      width:
+        24,
+
+      height:
+        24,
+
       marginRight:
         14,
     },
@@ -582,11 +702,17 @@ const styles =
       position:
         "absolute",
 
-      top: 1,
-      left: 1,
+      top:
+        1,
 
-      width: 16,
-      height: 16,
+      left:
+        1,
+
+      width:
+        16,
+
+      height:
+        16,
 
       borderRadius:
         8,
@@ -602,11 +728,17 @@ const styles =
       position:
         "absolute",
 
-      top: 16,
-      left: 14,
+      top:
+        16,
 
-      width: 9,
-      height: 3,
+      left:
+        14,
+
+      width:
+        9,
+
+      height:
+        3,
 
       borderRadius:
         2,
@@ -623,16 +755,23 @@ const styles =
     },
 
     searchInput: {
-      flex: 1,
+      flex:
+        1,
 
-      fontSize: 15,
+      fontSize:
+        15,
 
       color:
         THEME.text,
     },
 
+    /* ================================================== */
+    /* CATEGORY                                           */
+    /* ================================================== */
+
     categoryList: {
-      gap: 10,
+      gap:
+        10,
 
       marginTop:
         20,
@@ -661,7 +800,8 @@ const styles =
     },
 
     chipText: {
-      fontSize: 14,
+      fontSize:
+        14,
 
       fontWeight:
         "700",
@@ -675,8 +815,13 @@ const styles =
         "#FFFFFF",
     },
 
+    /* ================================================== */
+    /* LOADING                                            */
+    /* ================================================== */
+
     loadingContainer: {
-      flex: 1,
+      flex:
+        1,
 
       alignItems:
         "center",
@@ -689,14 +834,20 @@ const styles =
       marginTop:
         10,
 
-      fontSize: 13,
+      fontSize:
+        13,
 
       color:
         THEME.textSecondary,
     },
 
+    /* ================================================== */
+    /* EMPTY                                              */
+    /* ================================================== */
+
     emptyContainer: {
-      flex: 1,
+      flex:
+        1,
 
       alignItems:
         "center",
@@ -709,7 +860,8 @@ const styles =
     },
 
     emptyTitle: {
-      fontSize: 18,
+      fontSize:
+        18,
 
       fontWeight:
         "700",
@@ -722,7 +874,8 @@ const styles =
     },
 
     emptyText: {
-      fontSize: 13,
+      fontSize:
+        13,
 
       color:
         THEME.textSecondary,
@@ -730,6 +883,10 @@ const styles =
       textAlign:
         "center",
     },
+
+    /* ================================================== */
+    /* BOOK LIST                                          */
+    /* ================================================== */
 
     bookList: {
       paddingHorizontal:
@@ -743,11 +900,13 @@ const styles =
     },
 
     columnWrapper: {
-      gap: 16,
+      gap:
+        16,
     },
 
     card: {
-      flex: 1,
+      flex:
+        1,
 
       marginBottom:
         26,
@@ -760,8 +919,11 @@ const styles =
     },
 
     cover: {
-      width: 120,
-      height: 140,
+      width:
+        120,
+
+      height:
+        140,
 
       borderRadius:
         10,
@@ -774,8 +936,11 @@ const styles =
     },
 
     coverPlaceholder: {
-      width: 120,
-      height: 140,
+      width:
+        120,
+
+      height:
+        140,
 
       borderRadius:
         10,
@@ -794,14 +959,16 @@ const styles =
     },
 
     coverPlaceholderText: {
-      fontSize: 12,
+      fontSize:
+        12,
 
       color:
         THEME.textSecondary,
     },
 
     cardTitle: {
-      fontSize: 16,
+      fontSize:
+        16,
 
       fontWeight:
         "800",
@@ -811,7 +978,8 @@ const styles =
     },
 
     cardAuthor: {
-      fontSize: 12,
+      fontSize:
+        12,
 
       color:
         THEME.textSecondary,
@@ -821,7 +989,8 @@ const styles =
     },
 
     cardCategory: {
-      fontSize: 11,
+      fontSize:
+        11,
 
       color:
         THEME.textSecondary,
@@ -829,6 +998,10 @@ const styles =
       marginTop:
         2,
     },
+
+    /* ================================================== */
+    /* STATUS                                             */
+    /* ================================================== */
 
     statusBadge: {
       marginTop:
@@ -845,7 +1018,8 @@ const styles =
     },
 
     statusText: {
-      fontSize: 10,
+      fontSize:
+        10,
 
       fontWeight:
         "600",

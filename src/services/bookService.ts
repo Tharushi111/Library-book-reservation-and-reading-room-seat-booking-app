@@ -114,65 +114,68 @@ async function getCurrentUserId(): Promise<string> {
 }
 
 /* ================================================== */
+/* UPDATE GLOBAL BOOK STATUS                          */
+/* ================================================== */
+
+async function updateBookAvailability(
+  bookId: string,
+  status: BookAvailabilityStatus
+): Promise<void> {
+  const {
+    error,
+  } = await supabase
+    .from("books")
+    .update({
+      availability_status: status,
+    })
+    .eq("id", bookId);
+
+  if (error) {
+    console.error(
+      "Book availability update error:",
+      error
+    );
+
+    throw error;
+  }
+}
+
+/* ================================================== */
 /* AVAILABILITY                                       */
 /* ================================================== */
 
 /*
- * A book is unavailable when:
+ * IMPORTANT:
  *
- * 1. It has an active borrowed_books record
- * OR
- * 2. It has an active reservation.
+ * Availability is now read from the books table.
  *
- * Because your UI only has:
- * available / borrowed
- *
- * both situations display as "borrowed".
+ * This means every user sees the same availability
+ * instead of depending on whether RLS allows them
+ * to see another user's reservation.
  */
 
 async function getBookAvailability(
   bookId: string
 ): Promise<BookAvailabilityStatus> {
-  const [
-    borrowedResult,
-    reservationResult,
-  ] = await Promise.all([
-    supabase
-      .from("borrowed_books")
-      .select("id")
-      .eq("book_id", bookId)
-      .in("status", [
-        "borrowed",
-        "overdue",
-      ])
-      .limit(1),
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("books")
+    .select(
+      "availability_status"
+    )
+    .eq("id", bookId)
+    .single();
 
-    supabase
-      .from("book_reservations")
-      .select("id")
-      .eq("book_id", bookId)
-      .eq("status", "reserved")
-      .limit(1),
-  ]);
-
-  if (borrowedResult.error) {
-    throw borrowedResult.error;
+  if (error) {
+    throw error;
   }
 
-  if (reservationResult.error) {
-    throw reservationResult.error;
-  }
-
-  const hasBorrowing =
-    (borrowedResult.data?.length ?? 0) > 0;
-
-  const hasReservation =
-    (reservationResult.data?.length ?? 0) > 0;
-
-  return hasBorrowing ||
-    hasReservation
-    ? "borrowed"
-    : "available";
+  return (
+    data?.availability_status ??
+    "available"
+  ) as BookAvailabilityStatus;
 }
 
 /* ================================================== */
@@ -200,80 +203,33 @@ export async function getCatalogue(
   }
 
   const {
-    data: books,
-    error: booksError,
+    data,
+    error,
   } = await query;
 
-  if (booksError) {
-    throw booksError;
+  if (error) {
+    throw error;
   }
 
-  if (!books) {
+  if (!data) {
     return [];
   }
 
-  const [
-    borrowedResult,
-    reservationResult,
-  ] = await Promise.all([
-    supabase
-      .from("borrowed_books")
-      .select("book_id")
-      .in("status", [
-        "borrowed",
-        "overdue",
-      ]),
+  /*
+   * No book_reservations query here anymore.
+   *
+   * availability_status is global and comes
+   * directly from books.
+   */
 
-    supabase
-      .from("book_reservations")
-      .select("book_id")
-      .eq(
-        "status",
-        "reserved"
-      ),
-  ]);
-
-  if (borrowedResult.error) {
-    throw borrowedResult.error;
-  }
-
-  if (reservationResult.error) {
-    throw reservationResult.error;
-  }
-
-  const unavailableIds =
-    new Set<string>();
-
-  (
-    borrowedResult.data ??
-    []
-  ).forEach((row) => {
-    unavailableIds.add(
-      row.book_id
-    );
-  });
-
-  (
-    reservationResult.data ??
-    []
-  ).forEach((row) => {
-    unavailableIds.add(
-      row.book_id
-    );
-  });
-
-  return books.map((row) => {
-    const availabilityStatus:
-      BookAvailabilityStatus =
-      unavailableIds.has(row.id)
-        ? "borrowed"
-        : "available";
-
-    return mapBook(
-      row,
-      availabilityStatus
-    );
-  });
+  return data.map(
+    (row) =>
+      mapBook(
+        row,
+        row.availability_status ??
+          "available"
+      )
+  );
 }
 
 /* ================================================== */
@@ -296,14 +252,10 @@ export async function getBookById(
     throw error;
   }
 
-  const availabilityStatus =
-    await getBookAvailability(
-      bookId
-    );
-
   return mapBook(
     data,
-    availabilityStatus
+    data.availability_status ??
+      "available"
   );
 }
 
@@ -324,8 +276,8 @@ export async function searchBooks(
   }
 
   const {
-    data: books,
-    error: booksError,
+    data,
+    error,
   } = await supabase
     .from("books")
     .select("*")
@@ -336,33 +288,26 @@ export async function searchBooks(
       ascending: true,
     });
 
-  if (booksError) {
-    throw booksError;
+  if (error) {
+    throw error;
   }
 
-  if (!books) {
+  if (!data) {
     return [];
   }
 
-  const result = await Promise.all(
-    books.map(async (row) => {
-      const status =
-        await getBookAvailability(
-          row.id
-        );
-
-      return mapBook(
+  return data.map(
+    (row) =>
+      mapBook(
         row,
-        status
-      );
-    })
+        row.availability_status ??
+          "available"
+      )
   );
-
-  return result;
 }
 
 /* ================================================== */
-/* RESERVATIONS                                       */
+/* RESERVE BOOK                                       */
 /* ================================================== */
 
 export async function reserveBook(
@@ -381,25 +326,22 @@ export async function reserveBook(
     userId
   );
 
-  /*
-   * Verify book.
-   */
+  /* -------------------------------------------------- */
+  /* CHECK BOOK                                         */
+  /* -------------------------------------------------- */
 
   const {
     data: book,
     error: bookError,
   } = await supabase
     .from("books")
-    .select("id")
+    .select(
+      "id, availability_status"
+    )
     .eq("id", bookId)
     .single();
 
   if (bookError) {
-    console.error(
-      "Book error:",
-      bookError
-    );
-
     throw bookError;
   }
 
@@ -409,33 +351,26 @@ export async function reserveBook(
     );
   }
 
-  /*
-   * Check availability.
-   */
-
-  const availability =
-    await getBookAvailability(
-      bookId
-    );
+  /* -------------------------------------------------- */
+  /* CHECK GLOBAL AVAILABILITY                          */
+  /* -------------------------------------------------- */
 
   if (
-    availability !==
-    "available"
+    book.availability_status ===
+    "borrowed"
   ) {
     throw new Error(
       "This book is currently unavailable."
     );
   }
 
-  /*
-   * Prevent duplicate reservation
-   * by same user.
-   */
+  /* -------------------------------------------------- */
+  /* CHECK USER'S EXISTING RESERVATION                  */
+  /* -------------------------------------------------- */
 
   const {
-    data: userReservations,
-    error:
-      userReservationError,
+    data: existingReservation,
+    error: existingError,
   } = await supabase
     .from("book_reservations")
     .select("id")
@@ -444,22 +379,22 @@ export async function reserveBook(
     .eq("status", "reserved")
     .limit(1);
 
-  if (userReservationError) {
-    throw userReservationError;
+  if (existingError) {
+    throw existingError;
   }
 
   if (
-    userReservations &&
-    userReservations.length > 0
+    existingReservation &&
+    existingReservation.length > 0
   ) {
     throw new Error(
       "You already reserved this book."
     );
   }
 
-  /*
-   * Deadline = 48 hours.
-   */
+  /* -------------------------------------------------- */
+  /* CREATE DEADLINE                                    */
+  /* -------------------------------------------------- */
 
   const reservedAt =
     new Date();
@@ -473,37 +408,28 @@ export async function reserveBook(
           1000
     );
 
-  const payload = {
-    book_id: bookId,
-    user_id: userId,
-
-    status:
-      "reserved",
-
-    reserved_at:
-      reservedAt.toISOString(),
-
-    collection_deadline:
-      collectionDeadline.toISOString(),
-  };
-
-  console.log(
-    "Reservation payload:",
-    payload
-  );
-
-  /*
-   * Insert reservation.
-   */
+  /* -------------------------------------------------- */
+  /* INSERT RESERVATION                                 */
+  /* -------------------------------------------------- */
 
   const {
     data: reservation,
     error: insertError,
   } = await supabase
-    .from(
-      "book_reservations"
-    )
-    .insert(payload)
+    .from("book_reservations")
+    .insert({
+      book_id: bookId,
+
+      user_id: userId,
+
+      status: "reserved",
+
+      reserved_at:
+        reservedAt.toISOString(),
+
+      collection_deadline:
+        collectionDeadline.toISOString(),
+    })
     .select("*")
     .single();
 
@@ -513,27 +439,65 @@ export async function reserveBook(
       insertError
     );
 
+    /*
+     * Your unique database index protects
+     * against two users reserving at the
+     * same time.
+     */
+
+    if (
+      insertError.code ===
+      "23505"
+    ) {
+      throw new Error(
+        "Sorry, another user has already reserved this book."
+      );
+    }
+
     throw new Error(
       insertError.message
     );
   }
 
-  console.log(
-    "Reservation created:",
-    reservation
-  );
+  /* -------------------------------------------------- */
+  /* GLOBAL STATUS -> BORROWED                          */
+  /* -------------------------------------------------- */
 
-  /*
-   * Fetch reservation with book.
-   */
+  try {
+    await updateBookAvailability(
+      bookId,
+      "borrowed"
+    );
+  } catch (statusError) {
+    /*
+     * If changing the global book status fails,
+     * cancel the reservation we just created.
+     *
+     * This avoids inconsistent data.
+     */
+
+    await supabase
+      .from("book_reservations")
+      .update({
+        status: "cancelled",
+      })
+      .eq("id", reservation.id)
+      .eq("user_id", userId);
+
+    throw new Error(
+      "Unable to update book availability."
+    );
+  }
+
+  /* -------------------------------------------------- */
+  /* RETURN FULL RESERVATION                            */
+  /* -------------------------------------------------- */
 
   const {
     data: fullReservation,
     error: fetchError,
   } = await supabase
-    .from(
-      "book_reservations"
-    )
+    .from("book_reservations")
     .select(
       "*, book:books(*)"
     )
@@ -541,17 +505,23 @@ export async function reserveBook(
       "id",
       reservation.id
     )
+    .eq(
+      "user_id",
+      userId
+    )
     .single();
 
   if (fetchError) {
-    console.error(
-      "Reservation fetch error:",
-      fetchError
-    );
+    return mapReservation({
+      ...reservation,
 
-    return mapReservation(
-      reservation
-    );
+      book: {
+        ...book,
+
+        availability_status:
+          "borrowed",
+      },
+    });
   }
 
   return mapReservation(
@@ -559,9 +529,9 @@ export async function reserveBook(
   );
 }
 
-/* -------------------------------------------------- */
+/* ================================================== */
 /* GET RESERVATION                                    */
-/* -------------------------------------------------- */
+/* ================================================== */
 
 export async function getReservation(
   reservationId: string
@@ -573,9 +543,7 @@ export async function getReservation(
     data,
     error,
   } = await supabase
-    .from(
-      "book_reservations"
-    )
+    .from("book_reservations")
     .select(
       "*, book:books(*)"
     )
@@ -598,13 +566,9 @@ export async function getReservation(
   );
 }
 
-/* -------------------------------------------------- */
+/* ================================================== */
 /* CANCEL RESERVATION                                 */
-/* -------------------------------------------------- */
-
-/* -------------------------------------------------- */
-/* CANCEL RESERVATION                                 */
-/* -------------------------------------------------- */
+/* ================================================== */
 
 export async function cancelReservation(
   reservationId: string
@@ -612,10 +576,10 @@ export async function cancelReservation(
   const userId =
     await getCurrentUserId();
 
-  /*
-   * First verify that the reservation exists
-   * and belongs to the current user.
-   */
+  /* -------------------------------------------------- */
+  /* GET RESERVATION                                    */
+  /* -------------------------------------------------- */
+
   const {
     data: existingReservation,
     error: fetchError,
@@ -635,11 +599,6 @@ export async function cancelReservation(
     .maybeSingle();
 
   if (fetchError) {
-    console.error(
-      "Reservation fetch error:",
-      fetchError
-    );
-
     throw fetchError;
   }
 
@@ -649,9 +608,6 @@ export async function cancelReservation(
     );
   }
 
-  /*
-   * Only active reservations can be cancelled.
-   */
   if (
     existingReservation.status !==
     "reserved"
@@ -670,9 +626,10 @@ export async function cancelReservation(
     );
   }
 
-  /*
-   * Update reservation status.
-   */
+  /* -------------------------------------------------- */
+  /* CANCEL RESERVATION                                 */
+  /* -------------------------------------------------- */
+
   const {
     data: cancelledReservation,
     error: updateError,
@@ -699,11 +656,6 @@ export async function cancelReservation(
     .maybeSingle();
 
   if (updateError) {
-    console.error(
-      "Cancel reservation error:",
-      updateError
-    );
-
     throw updateError;
   }
 
@@ -713,14 +665,64 @@ export async function cancelReservation(
     );
   }
 
-  console.log(
-    "Reservation cancelled:",
-    cancelledReservation
-  );
+  /* -------------------------------------------------- */
+  /* CHECK ACTIVE BORROW                                */
+  /* -------------------------------------------------- */
 
-  return mapReservation(
-    cancelledReservation
-  );
+  const {
+    data: activeBorrow,
+    error: borrowError,
+  } = await supabase
+    .from("borrowed_books")
+    .select("id")
+    .eq(
+      "book_id",
+      existingReservation.book_id
+    )
+    .in("status", [
+      "borrowed",
+      "overdue",
+    ])
+    .limit(1);
+
+  if (borrowError) {
+    console.error(
+      "Borrow check error:",
+      borrowError
+    );
+  }
+
+  /*
+   * If no physical borrowing exists,
+   * the book becomes available again.
+   */
+
+  if (
+    !activeBorrow ||
+    activeBorrow.length === 0
+  ) {
+    await updateBookAvailability(
+      existingReservation.book_id,
+      "available"
+    );
+  }
+
+  return mapReservation({
+    ...cancelledReservation,
+
+    book:
+      cancelledReservation.book
+        ? {
+            ...cancelledReservation.book,
+
+            availability_status:
+              activeBorrow &&
+              activeBorrow.length > 0
+                ? "borrowed"
+                : "available",
+          }
+        : undefined,
+  });
 }
 
 /* ================================================== */
@@ -732,29 +734,41 @@ export async function joinQueue(
   userId?: string
 ): Promise<BookQueueEntry> {
   const currentUserId =
-    userId ?? (await getCurrentUserId());
+    userId ??
+    (await getCurrentUserId());
 
   const availability =
-    await getBookAvailability(bookId);
+    await getBookAvailability(
+      bookId
+    );
 
-  if (availability !== "borrowed") {
+  if (
+    availability !==
+    "borrowed"
+  ) {
     throw new Error(
       "This book is currently available. You do not need to join the queue."
     );
   }
 
-  /*
-   * Check whether this user is already waiting.
-   */
   const {
     data: existingEntry,
     error: existingError,
   } = await supabase
     .from("book_queue")
     .select("*")
-    .eq("book_id", bookId)
-    .eq("user_id", currentUserId)
-    .eq("status", "waiting")
+    .eq(
+      "book_id",
+      bookId
+    )
+    .eq(
+      "user_id",
+      currentUserId
+    )
+    .eq(
+      "status",
+      "waiting"
+    )
     .maybeSingle();
 
   if (existingError) {
@@ -767,9 +781,6 @@ export async function joinQueue(
     );
   }
 
-  /*
-   * Get current waiting count.
-   */
   const {
     count,
     error: countError,
@@ -779,56 +790,60 @@ export async function joinQueue(
       count: "exact",
       head: true,
     })
-    .eq("book_id", bookId)
-    .eq("status", "waiting");
+    .eq(
+      "book_id",
+      bookId
+    )
+    .eq(
+      "status",
+      "waiting"
+    );
 
   if (countError) {
     throw countError;
   }
 
-  const nextPosition = (count ?? 0) + 1;
+  const nextPosition =
+    (count ?? 0) + 1;
 
-  /*
-   * Example estimate:
-   * around 4 days per queue position.
-   *
-   * Change this depending on your actual
-   * library borrowing period.
-   */
   const estimatedWaitDays =
-    Math.max(1, nextPosition) * 4;
+    Math.max(
+      1,
+      nextPosition
+    ) * 4;
 
   const {
-    data,
     error,
   } = await supabase
     .from("book_queue")
     .insert({
-      book_id: bookId,
-      user_id: currentUserId,
+      book_id:
+        bookId,
 
-      queue_position: nextPosition,
+      user_id:
+        currentUserId,
+
+      queue_position:
+        nextPosition,
 
       estimated_wait_days:
         estimatedWaitDays,
 
-      notify_enabled: true,
+      notify_enabled:
+        true,
 
-      status: "waiting",
-    })
-    .select("*, book:books(*)")
-    .single();
+      status:
+        "waiting",
+    });
 
   if (error) {
     throw error;
   }
 
-  /*
-   * Get it again so position is calculated
-   * from the live queue.
-   */
   const entry =
-    await getQueueEntry(bookId);
+    await getQueueEntry(
+      bookId
+    );
 
   if (!entry) {
     throw new Error(
@@ -839,9 +854,9 @@ export async function joinQueue(
   return entry;
 }
 
-/* -------------------------------------------------- */
-/* GET USER QUEUE ENTRY - LIVE POSITION               */
-/* -------------------------------------------------- */
+/* ================================================== */
+/* GET QUEUE ENTRY                                    */
+/* ================================================== */
 
 export async function getQueueEntry(
   bookId: string
@@ -849,26 +864,34 @@ export async function getQueueEntry(
   const userId =
     await getCurrentUserId();
 
-  /*
-   * Get all active queue members in their
-   * actual queue order.
-   *
-   * joined_at is the real source of queue order.
-   */
   const {
     data: queueRows,
     error: queueError,
   } = await supabase
     .from("book_queue")
-    .select("*, book:books(*)")
-    .eq("book_id", bookId)
-    .eq("status", "waiting")
-    .order("joined_at", {
-      ascending: true,
-    })
-    .order("id", {
-      ascending: true,
-    });
+    .select(
+      "*, book:books(*)"
+    )
+    .eq(
+      "book_id",
+      bookId
+    )
+    .eq(
+      "status",
+      "waiting"
+    )
+    .order(
+      "joined_at",
+      {
+        ascending: true,
+      }
+    )
+    .order(
+      "id",
+      {
+        ascending: true,
+      }
+    );
 
   if (queueError) {
     throw queueError;
@@ -881,7 +904,8 @@ export async function getQueueEntry(
   const index =
     queueRows.findIndex(
       (row) =>
-        row.user_id === userId
+        row.user_id ===
+        userId
     );
 
   if (index === -1) {
@@ -894,10 +918,6 @@ export async function getQueueEntry(
   const row =
     queueRows[index];
 
-  /*
-   * Position is calculated live instead of
-   * trusting an old DB queue_position value.
-   */
   return mapQueueEntry({
     ...row,
 
@@ -912,9 +932,9 @@ export async function getQueueEntry(
   });
 }
 
-/* -------------------------------------------------- */
+/* ================================================== */
 /* QUEUE TOTAL                                        */
-/* -------------------------------------------------- */
+/* ================================================== */
 
 export async function getQueueTotal(
   bookId: string
@@ -928,8 +948,14 @@ export async function getQueueTotal(
       count: "exact",
       head: true,
     })
-    .eq("book_id", bookId)
-    .eq("status", "waiting");
+    .eq(
+      "book_id",
+      bookId
+    )
+    .eq(
+      "status",
+      "waiting"
+    );
 
   if (error) {
     throw error;
@@ -938,9 +964,9 @@ export async function getQueueTotal(
   return count ?? 0;
 }
 
-/* -------------------------------------------------- */
-/* NOTIFICATION                                       */
-/* -------------------------------------------------- */
+/* ================================================== */
+/* QUEUE NOTIFICATION                                 */
+/* ================================================== */
 
 export async function setQueueNotify(
   queueEntryId: string,
@@ -954,19 +980,26 @@ export async function setQueueNotify(
   } = await supabase
     .from("book_queue")
     .update({
-      notify_enabled: enabled,
+      notify_enabled:
+        enabled,
     })
-    .eq("id", queueEntryId)
-    .eq("user_id", userId);
+    .eq(
+      "id",
+      queueEntryId
+    )
+    .eq(
+      "user_id",
+      userId
+    );
 
   if (error) {
     throw error;
   }
 }
 
-/* -------------------------------------------------- */
-/* REALTIME QUEUE LISTENER                            */
-/* -------------------------------------------------- */
+/* ================================================== */
+/* REALTIME QUEUE                                     */
+/* ================================================== */
 
 export function subscribeToBookQueue(
   bookId: string,
@@ -981,9 +1014,57 @@ export function subscribeToBookQueue(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "book_queue",
-          filter: `book_id=eq.${bookId}`,
+
+          schema:
+            "public",
+
+          table:
+            "book_queue",
+
+          filter:
+            `book_id=eq.${bookId}`,
+        },
+        () => {
+          callback();
+        }
+      )
+      .subscribe();
+
+  return () => {
+    supabase.removeChannel(
+      channel
+    );
+  };
+}
+
+/* ================================================== */
+/* REALTIME BOOK AVAILABILITY                         */
+/* ================================================== */
+
+/*
+ * Catalogue can use this listener so if User 1
+ * reserves a book while User 2's catalogue is open,
+ * User 2 automatically sees Borrowed.
+ */
+
+export function subscribeToBookAvailability(
+  callback: () => void
+) {
+  const channel =
+    supabase
+      .channel(
+        "global-book-availability"
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+
+          schema:
+            "public",
+
+          table:
+            "books",
         },
         () => {
           callback();
