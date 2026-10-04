@@ -1,35 +1,70 @@
 import React, {
+  useCallback,
   useEffect,
   useState,
 } from "react";
 
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
   ActivityIndicator,
-  TouchableOpacity,
-  ScrollView,
   Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
+  useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
 
-import type { Book } from "../../types";
+import {
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
+import type {
+  Book,
+} from "../../types";
 
 import {
   getBookById,
   reserveBook,
 } from "../../services/bookService";
 
-import { COLORS } from "../../constants/colors";
-
 type RouteParams = {
   bookId: string;
+};
+
+const THEME = {
+  white:
+    "#FFFFFF",
+
+  blue:
+    "#0057B8",
+
+  orange:
+    "#FF6525",
+
+  text:
+    "#111111",
+
+  secondary:
+    "#777777",
+
+  availableBg:
+    "#9BF09B",
+
+  availableText:
+    "#168324",
+
+  borrowedBg:
+    "#FFACB0",
+
+  borrowedText:
+    "#E00013",
 };
 
 export default function BookDetailsScreen() {
@@ -39,94 +74,169 @@ export default function BookDetailsScreen() {
   const route =
     useRoute();
 
-  const { bookId } =
+  const insets =
+    useSafeAreaInsets();
+
+  const {
+    bookId,
+  } =
     route.params as RouteParams;
 
-  const [book, setBook] =
-    useState<Book | null>(null);
+  const [
+    book,
+    setBook,
+  ] =
+    useState<Book | null>(
+      null
+    );
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
-  const [reserving, setReserving] =
+  const [
+    reserving,
+    setReserving,
+  ] =
     useState(false);
 
-  /**
-   * Load the selected book.
-   */
-  useEffect(() => {
-    loadBook();
-  }, [bookId]);
+  const loadBook =
+    useCallback(
+      async (
+        showLoader =
+          true
+      ) => {
+        try {
+          if (
+            showLoader
+          ) {
+            setLoading(
+              true
+            );
+          }
 
-  const loadBook = async () => {
-    try {
-      setLoading(true);
+          const data =
+            await getBookById(
+              bookId
+            );
 
-      const data =
-        await getBookById(
-          bookId
+          setBook(
+            data
+          );
+        } catch (
+          error: any
+        ) {
+          console.error(
+            "Failed to load book:",
+            error
+          );
+
+          Alert.alert(
+            "Error",
+            error?.message ??
+              "Unable to load book."
+          );
+        } finally {
+          if (
+            showLoader
+          ) {
+            setLoading(
+              false
+            );
+          }
+        }
+      },
+      [
+        bookId,
+      ]
+    );
+
+  useEffect(
+    () => {
+      loadBook();
+    },
+    [
+      loadBook,
+    ]
+  );
+
+  useFocusEffect(
+    useCallback(
+      () => {
+        loadBook(
+          false
+        );
+      },
+      [
+        loadBook,
+      ]
+    )
+  );
+
+  const handleReserve =
+    async () => {
+      if (
+        !book ||
+        reserving
+      ) {
+        return;
+      }
+
+      try {
+        setReserving(
+          true
         );
 
-      setBook(data);
-    } catch (error) {
-      console.error(
-        "Failed to load book:",
-        error
-      );
+        const reservation =
+          await reserveBook(
+            book.id
+          );
 
-      Alert.alert(
-        "Error",
-        "Unable to load book details."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Reserve the current book.
-   */
-  const handleReserve = async () => {
-    if (!book || reserving) return;
-
-    try {
-        setReserving(true);
-
-        console.log("Starting reservation for:", book.id);
-
-        const reservation = await reserveBook(book.id);
-
-        console.log(
-        "Reservation created successfully:",
-        reservation
+        navigation.navigate(
+          "ReservationConfirmation",
+          {
+            reservationId:
+              reservation.id,
+          }
         );
-
-        navigation.navigate("ReservationConfirmation", {
-        reservationId: reservation.id,
-        });
-    } catch (error: any) {
-        console.error("Failed to reserve book:", error);
+      } catch (
+        error: any
+      ) {
+        console.error(
+          "Reservation error:",
+          error
+        );
 
         Alert.alert(
-        "Reservation Failed",
-        error?.message ?? "Unable to reserve this book."
+          "Reservation Failed",
+          error?.message ??
+            "Unable to reserve book."
         );
-    } finally {
-        setReserving(false);
-    }
+
+        await loadBook(
+          false
+        );
+      } finally {
+        setReserving(
+          false
+        );
+      }
     };
 
-  /**
-   * Loading state.
-   */
   if (loading) {
     return (
       <View
-        style={styles.center}
+        style={
+          styles.center
+        }
       >
         <ActivityIndicator
           size="large"
-          color={COLORS.primary}
+          color={
+            THEME.orange
+          }
         />
 
         <Text
@@ -140,13 +250,12 @@ export default function BookDetailsScreen() {
     );
   }
 
-  /**
-   * Book not found.
-   */
   if (!book) {
     return (
       <View
-        style={styles.center}
+        style={
+          styles.center
+        }
       >
         <Text
           style={
@@ -158,7 +267,7 @@ export default function BookDetailsScreen() {
 
         <TouchableOpacity
           style={
-            styles.backButton
+            styles.primaryButton
           }
           onPress={() =>
             navigation.goBack()
@@ -166,7 +275,7 @@ export default function BookDetailsScreen() {
         >
           <Text
             style={
-              styles.backButtonText
+              styles.primaryButtonText
             }
           >
             Go Back
@@ -180,24 +289,24 @@ export default function BookDetailsScreen() {
     book.availabilityStatus ===
     "available";
 
-  const isReserved =
-    book.availabilityStatus ===
-    "reserved";
-
   return (
     <View
-      style={styles.screen}
+      style={[
+        styles.screen,
+        {
+          paddingTop:
+            insets.top,
+        },
+      ]}
     >
       <ScrollView
         showsVerticalScrollIndicator={
           false
         }
         contentContainerStyle={
-          styles.container
+          styles.scrollContent
         }
       >
-        {/* Back button */}
-
         <TouchableOpacity
           style={
             styles.backButton
@@ -208,151 +317,95 @@ export default function BookDetailsScreen() {
         >
           <Text
             style={
-              styles.backButtonText
+              styles.backArrow
             }
           >
-            ← Back
+            ‹
           </Text>
         </TouchableOpacity>
 
-        {/* Book Cover */}
-
-        {book.coverUrl ? (
-          <Image
-            source={{
-              uri: book.coverUrl,
-            }}
-            style={styles.cover}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={
-              styles.coverPlaceholder
-            }
-          >
-            <Text
-              style={
-                styles.coverPlaceholderText
-              }
-            >
-              No Cover
-            </Text>
-          </View>
-        )}
-
-        {/* Title */}
-
-        <Text
-          style={styles.title}
-        >
-          {book.title}
-        </Text>
-
-        {/* Author */}
-
-        <Text
-          style={styles.author}
-        >
-          By {book.author}
-        </Text>
-
-        {/* Availability */}
-
-        <View
-          style={[
-            styles.statusContainer,
-            {
-              backgroundColor:
-                isAvailable
-                  ? "#E8F7EE"
-                  : isReserved
-                  ? "#FFF4E5"
-                  : "#FDECEC",
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.statusText,
-              {
-                color: isAvailable
-                  ? COLORS.available
-                  : isReserved
-                  ? COLORS.warning
-                  : COLORS.borrowed,
-              },
-            ]}
-          >
-            {isAvailable
-              ? "● Available"
-              : isReserved
-              ? "● Reserved"
-              : "● Borrowed"}
-          </Text>
-        </View>
-
-        {/* Book Information */}
-
         <View
           style={
-            styles.infoSection
+            styles.coverSection
           }
         >
-          <Text
-            style={
-              styles.sectionTitle
-            }
-          >
-            Book Information
-          </Text>
-
-          <View
-            style={styles.infoRow}
-          >
-            <Text
+          {book.coverUrl ? (
+            <Image
+              source={{
+                uri:
+                  book.coverUrl,
+              }}
               style={
-                styles.infoLabel
+                styles.cover
               }
-            >
-              Category
-            </Text>
-
-            <Text
-              style={
-                styles.infoValue
-              }
-            >
-              {book.category}
-            </Text>
-          </View>
-
-          {book.edition && (
+              resizeMode="cover"
+            />
+          ) : (
             <View
               style={
-                styles.infoRow
+                styles.coverPlaceholder
               }
             >
               <Text
                 style={
-                  styles.infoLabel
+                  styles.coverPlaceholderText
                 }
               >
-                Edition
-              </Text>
-
-              <Text
-                style={
-                  styles.infoValue
-                }
-              >
-                {book.edition}
+                No Cover
               </Text>
             </View>
           )}
         </View>
 
-        {/* Description */}
+        <View
+          style={
+            styles.bookInfo
+          }
+        >
+          <Text
+            style={
+              styles.title
+            }
+          >
+            {book.title}
+          </Text>
+
+          <Text
+            style={
+              styles.author
+            }
+          >
+            {book.author}
+
+            {book.edition
+              ? `  ${book.edition}`
+              : ""}
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+
+              isAvailable
+                ? styles.availableBadge
+                : styles.borrowedBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+
+                isAvailable
+                  ? styles.availableText
+                  : styles.borrowedText,
+              ]}
+            >
+              {isAvailable
+                ? "Available"
+                : "Borrowed"}
+            </Text>
+          </View>
+        </View>
 
         {book.description && (
           <View
@@ -362,39 +415,36 @@ export default function BookDetailsScreen() {
           >
             <Text
               style={
-                styles.sectionTitle
-              }
-            >
-              Description
-            </Text>
-
-            <Text
-              style={
                 styles.description
               }
             >
-              {book.description}
+              {
+                book.description
+              }
             </Text>
           </View>
         )}
-
-        {/* Action */}
 
         {isAvailable ? (
           <TouchableOpacity
             style={[
               styles.primaryButton,
+
               reserving &&
                 styles.disabledButton,
             ]}
+            disabled={
+              reserving
+            }
             onPress={
               handleReserve
             }
-            disabled={reserving}
           >
             {reserving ? (
               <ActivityIndicator
-                color="#FFFFFF"
+                color={
+                  THEME.white
+                }
               />
             ) : (
               <Text
@@ -402,7 +452,7 @@ export default function BookDetailsScreen() {
                   styles.primaryButtonText
                 }
               >
-                Reserve Book
+                Reserve This Book
               </Text>
             )}
           </TouchableOpacity>
@@ -440,186 +490,276 @@ const styles =
     screen: {
       flex: 1,
       backgroundColor:
-        COLORS.surface,
+        THEME.white,
     },
 
-    container: {
-      padding: 20,
-      paddingBottom: 40,
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom:
+        100,
     },
 
     center: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+
       backgroundColor:
-        COLORS.surface,
-      padding: 20,
+        THEME.white,
+
+      paddingHorizontal:
+        30,
     },
 
     loadingText: {
-      marginTop: 12,
-      fontSize: 14,
+      marginTop:
+        12,
+
       color:
-        COLORS.textSecondary,
+        THEME.secondary,
     },
 
     errorTitle: {
       fontSize: 20,
-      fontWeight: "700",
+
+      fontWeight:
+        "700",
+
+      marginBottom:
+        20,
+
       color:
-        COLORS.textPrimary,
-      marginBottom: 20,
+        THEME.text,
     },
 
     backButton: {
-      alignSelf:
-        "flex-start",
-      marginBottom: 18,
-    },
+      width: 45,
+      height: 50,
 
-    backButtonText: {
-      fontSize: 15,
-      fontWeight: "600",
-      color:
-        COLORS.primary,
-    },
+      marginLeft:
+        24,
 
-    cover: {
-      width: "100%",
-      height: 360,
-      borderRadius: 12,
-      backgroundColor:
-        "#E8F1FC",
-      marginBottom: 20,
-    },
+      marginTop:
+        8,
 
-    coverPlaceholder: {
-      width: "100%",
-      height: 360,
-      borderRadius: 12,
-      backgroundColor:
-        "#E8F1FC",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 20,
-    },
-
-    coverPlaceholderText: {
-      fontSize: 14,
-      color:
-        COLORS.textSecondary,
-    },
-
-    title: {
-      fontSize: 26,
-      fontWeight: "700",
-      color:
-        COLORS.textPrimary,
-      marginBottom: 6,
-    },
-
-    author: {
-      fontSize: 15,
-      color:
-        COLORS.textSecondary,
-      marginBottom: 16,
-    },
-
-    statusContainer: {
-      alignSelf:
-        "flex-start",
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      borderRadius: 20,
-      marginBottom: 24,
-    },
-
-    statusText: {
-      fontSize: 13,
-      fontWeight: "600",
-    },
-
-    infoSection: {
-      marginBottom: 24,
-    },
-
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      color:
-        COLORS.textPrimary,
-      marginBottom: 14,
-    },
-
-    infoRow: {
-      flexDirection:
-        "row",
-      justifyContent:
-        "space-between",
-      paddingVertical: 10,
-      borderBottomWidth: 1,
-      borderBottomColor:
-        COLORS.border,
-    },
-
-    infoLabel: {
-      fontSize: 14,
-      color:
-        COLORS.textSecondary,
-    },
-
-    infoValue: {
-      fontSize: 14,
-      fontWeight: "600",
-      color:
-        COLORS.textPrimary,
-    },
-
-    descriptionSection: {
-      marginBottom: 28,
-    },
-
-    description: {
-      fontSize: 14,
-      lineHeight: 22,
-      color:
-        COLORS.textSecondary,
-    },
-
-    primaryButton: {
-      height: 52,
-      borderRadius: 10,
-      backgroundColor:
-        COLORS.primary,
-      alignItems: "center",
       justifyContent:
         "center",
     },
 
-    disabledButton: {
-      opacity: 0.7,
+    backArrow: {
+      fontSize: 32,
+
+      color:
+        THEME.blue,
+    },
+
+    coverSection: {
+      alignItems:
+        "center",
+
+      marginTop:
+        46,
+    },
+
+    cover: {
+      width: 168,
+      height: 196,
+
+      borderRadius:
+        7,
+    },
+
+    coverPlaceholder: {
+      width: 168,
+      height: 196,
+
+      borderRadius:
+        7,
+
+      backgroundColor:
+        "#E8F1FC",
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+    },
+
+    coverPlaceholderText: {
+      color:
+        THEME.secondary,
+    },
+
+    bookInfo: {
+      alignItems:
+        "center",
+
+      marginTop:
+        52,
+
+      paddingHorizontal:
+        24,
+    },
+
+    title: {
+      fontSize: 23,
+
+      fontWeight:
+        "800",
+
+      lineHeight: 28,
+
+      color:
+        THEME.text,
+
+      textAlign:
+        "center",
+    },
+
+    author: {
+      marginTop:
+        4,
+
+      fontSize: 12,
+
+      color:
+        THEME.secondary,
+
+      textAlign:
+        "center",
+    },
+
+    statusBadge: {
+      marginTop:
+        7,
+
+      paddingHorizontal:
+        16,
+
+      paddingVertical:
+        4,
+
+      borderRadius:
+        20,
+    },
+
+    statusText: {
+      fontSize: 11,
+
+      fontWeight:
+        "600",
+    },
+
+    availableBadge: {
+      backgroundColor:
+        THEME.availableBg,
+    },
+
+    availableText: {
+      color:
+        THEME.availableText,
+    },
+
+    borrowedBadge: {
+      backgroundColor:
+        THEME.borrowedBg,
+    },
+
+    borrowedText: {
+      color:
+        THEME.borrowedText,
+    },
+
+    descriptionSection: {
+      marginTop:
+        24,
+
+      paddingHorizontal:
+        44,
+    },
+
+    description: {
+      fontSize: 11,
+
+      lineHeight: 14,
+
+      color:
+        THEME.text,
+    },
+
+    primaryButton: {
+      alignSelf:
+        "center",
+
+      width: 178,
+      height: 36,
+
+      marginTop:
+        24,
+
+      borderRadius:
+        7,
+
+      backgroundColor:
+        THEME.orange,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
     },
 
     primaryButtonText: {
-      color: "#FFFFFF",
-      fontSize: 15,
-      fontWeight: "700",
+      color:
+        THEME.white,
+
+      fontSize: 11,
+
+      fontWeight:
+        "700",
     },
 
     queueButton: {
-      height: 52,
-      borderRadius: 10,
+      alignSelf:
+        "center",
+
+      width: 178,
+      height: 36,
+
+      marginTop:
+        24,
+
+      borderRadius:
+        7,
+
       backgroundColor:
-        COLORS.warning,
-      alignItems: "center",
+        THEME.orange,
+
+      alignItems:
+        "center",
+
       justifyContent:
         "center",
     },
 
     queueButtonText: {
-      color: "#FFFFFF",
-      fontSize: 15,
-      fontWeight: "700",
+      color:
+        THEME.white,
+
+      fontSize: 11,
+
+      fontWeight:
+        "700",
+    },
+
+    disabledButton: {
+      opacity:
+        0.6,
     },
   });

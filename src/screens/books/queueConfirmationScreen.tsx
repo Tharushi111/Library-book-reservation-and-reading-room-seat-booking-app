@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import {
   ActivityIndicator,
   ScrollView,
@@ -7,17 +12,28 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import {
+  useFocusEffect,
   useNavigation,
   useRoute,
 } from "@react-navigation/native";
 
-import { supabase } from "../../services/supabase";
+import {
+  Ionicons,
+} from "@expo/vector-icons";
+
 import {
   getBookById,
   getQueueEntry,
   getQueueTotal,
   joinQueue,
+  setQueueNotify,
+  subscribeToBookQueue,
 } from "../../services/bookService";
 
 import type {
@@ -25,630 +41,1219 @@ import type {
   BookQueueEntry,
 } from "../../types";
 
-import { COLORS } from "../../constants/colors";
-
-type QueueConfirmationParams = {
+type RouteParams = {
   bookId: string;
 };
 
+const THEME = {
+  background: "#FFFFFF",
+
+  blue: "#0757B7",
+
+  orange: "#FF6428",
+
+  orangeLight: "#FFD8C7",
+
+  orangeBorder: "#FFAF8D",
+
+  text: "#111111",
+
+  textSecondary: "#666666",
+
+  border: "#E3E9F0",
+
+  iconBackground: "#FFB89D",
+};
+
 export default function QueueConfirmationScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const navigation =
+    useNavigation<any>();
 
-  const { bookId } =
-    route.params as QueueConfirmationParams;
+  const route =
+    useRoute<any>();
 
-  const [book, setBook] = useState<Book | null>(null);
-  const [queueEntry, setQueueEntry] =
-    useState<BookQueueEntry | null>(null);
+  const {
+    bookId,
+  } =
+    route.params as RouteParams;
 
-  const [queueTotal, setQueueTotal] =
-    useState<number>(0);
+  const [
+    book,
+    setBook,
+  ] =
+    useState<Book | null>(
+      null
+    );
 
-  const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
-  const [error, setError] = useState("");
+  const [
+    queueEntry,
+    setQueueEntry,
+  ] =
+    useState<BookQueueEntry | null>(
+      null
+    );
 
-  useEffect(() => {
-    loadQueueInformation();
-  }, [bookId]);
+  const [
+    queueTotal,
+    setQueueTotal,
+  ] =
+    useState(0);
 
-  const loadQueueInformation = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
-      // Get the current logged-in user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const [
+    joining,
+    setJoining,
+  ] =
+    useState(false);
 
-      if (!user) {
-        throw new Error(
-          "You must be logged in to join the queue."
-        );
-      }
+  const [
+    updatingNotify,
+    setUpdatingNotify,
+  ] =
+    useState(false);
 
-      // Load the book
-      const bookData = await getBookById(bookId);
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
 
-      setBook(bookData);
+  /* ================================================== */
+  /* LOAD QUEUE                                         */
+  /* ================================================== */
 
-      // Check if this user is already in the queue
-      const { data: existingEntry, error: existingError } =
-        await supabase
-          .from("book_queue")
-          .select("*, book:books(*)")
-          .eq("book_id", bookId)
-          .eq("user_id", user.id)
-          .eq("status", "waiting")
-          .maybeSingle();
+  const loadQueueInformation =
+    useCallback(
+      async (
+        showLoading = false
+      ) => {
+        try {
+          if (showLoading) {
+            setLoading(true);
+          }
 
-      if (existingError) {
-        throw existingError;
-      }
+          setError("");
 
-      if (existingEntry) {
-        setQueueEntry(existingEntry as BookQueueEntry);
-      } else {
-        setQueueEntry(null);
-      }
+          const [
+            bookData,
+            existingEntry,
+            total,
+          ] =
+            await Promise.all([
+              getBookById(
+                bookId
+              ),
 
-      // Get total waiting
-      const total = await getQueueTotal(bookId);
+              getQueueEntry(
+                bookId
+              ),
 
-      setQueueTotal(total);
-    } catch (err: any) {
-      console.error(
-        "Failed to load queue information:",
-        err
-      );
+              getQueueTotal(
+                bookId
+              ),
+            ]);
 
-      setError(
-        err?.message ||
-          "Unable to load queue information."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+          setBook(
+            bookData
+          );
 
-  const handleJoinQueue = async () => {
-    try {
-      setJoining(true);
-      setError("");
+          setQueueEntry(
+            existingEntry
+          );
 
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+          setQueueTotal(
+            total
+          );
+        } catch (
+          err: any
+        ) {
+          console.error(
+            "Queue loading error:",
+            err
+          );
 
-      if (!user) {
-        throw new Error(
-          "You must be logged in to join the queue."
-        );
-      }
-
-      const entry = await joinQueue(
+          setError(
+            err?.message ??
+              "Unable to load queue information."
+          );
+        } finally {
+          if (showLoading) {
+            setLoading(false);
+          }
+        }
+      },
+      [
         bookId,
-        user.id
+      ]
+    );
+
+  /* ================================================== */
+  /* INITIAL LOAD                                       */
+  /* ================================================== */
+
+  useEffect(
+    () => {
+      loadQueueInformation(
+        true
       );
+    },
+    [
+      loadQueueInformation,
+    ]
+  );
 
-      setQueueEntry(entry);
+  /* ================================================== */
+  /* REFRESH WHEN SCREEN IS OPENED                      */
+  /* ================================================== */
 
-      // Refresh total
-      const total = await getQueueTotal(bookId);
+  useFocusEffect(
+    useCallback(
+      () => {
+        loadQueueInformation();
+      },
+      [
+        loadQueueInformation,
+      ]
+    )
+  );
 
-      setQueueTotal(total);
-    } catch (err: any) {
-      console.error(
-        "Failed to join queue:",
+  /* ================================================== */
+  /* SUPABASE REALTIME                                  */
+  /* ================================================== */
+
+  useEffect(
+    () => {
+      if (!bookId) {
+        return;
+      }
+
+      const unsubscribe =
+        subscribeToBookQueue(
+          bookId,
+          () => {
+            loadQueueInformation();
+          }
+        );
+
+      return () => {
+        unsubscribe();
+      };
+    },
+    [
+      bookId,
+      loadQueueInformation,
+    ]
+  );
+
+  /* ================================================== */
+  /* JOIN QUEUE                                         */
+  /* ================================================== */
+
+  const handleJoinQueue =
+    async () => {
+      try {
+        setJoining(true);
+
+        setError("");
+
+        const latestBook =
+          await getBookById(
+            bookId
+          );
+
+        if (
+          latestBook.availabilityStatus ===
+          "available"
+        ) {
+          throw new Error(
+            "This book is now available. You can reserve it directly."
+          );
+        }
+
+        await joinQueue(
+          bookId
+        );
+
+        await loadQueueInformation();
+      } catch (
+        err: any
+      ) {
+        console.error(
+          "Join queue error:",
+          err
+        );
+
+        setError(
+          err?.message ??
+            "Unable to join queue."
+        );
+      } finally {
+        setJoining(false);
+      }
+    };
+
+  /* ================================================== */
+  /* NOTIFY CHECKBOX                                    */
+  /* ================================================== */
+
+  const handleToggleNotify =
+    async () => {
+      if (
+        !queueEntry ||
+        updatingNotify
+      ) {
+        return;
+      }
+
+      const newValue =
+        !(
+          queueEntry.notifyEnabled ??
+          true
+        );
+
+      const previousValue =
+        queueEntry.notifyEnabled ??
+        true;
+
+      setQueueEntry({
+        ...queueEntry,
+        notifyEnabled:
+          newValue,
+      });
+
+      try {
+        setUpdatingNotify(
+          true
+        );
+
+        await setQueueNotify(
+          queueEntry.id,
+          newValue
+        );
+      } catch (
         err
-      );
+      ) {
+        console.error(
+          "Notify update error:",
+          err
+        );
 
-      setError(
-        err?.message ||
-          "Unable to join the queue."
-      );
-    } finally {
-      setJoining(false);
-    }
-  };
+        setQueueEntry({
+          ...queueEntry,
+          notifyEnabled:
+            previousValue,
+        });
+
+        setError(
+          "Unable to update notification preference."
+        );
+      } finally {
+        setUpdatingNotify(
+          false
+        );
+      }
+    };
+
+  /* ================================================== */
+  /* LOADING                                            */
+  /* ================================================== */
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator
-          size="large"
-          color={COLORS.primary}
-        />
+      <SafeAreaView
+        style={
+          styles.container
+        }
+        edges={[
+          "top",
+          "left",
+          "right",
+        ]}
+      >
+        <View
+          style={
+            styles.center
+          }
+        >
+          <ActivityIndicator
+            size="large"
+            color={
+              THEME.orange
+            }
+          />
 
-        <Text style={styles.loadingText}>
-          Checking queue...
-        </Text>
-      </View>
+          <Text
+            style={
+              styles.loadingText
+            }
+          >
+            Loading queue...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
+
+  /* ================================================== */
+  /* BOOK ERROR                                         */
+  /* ================================================== */
 
   if (!book) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorTitle}>
-          Book not found
-        </Text>
-
-        <Text style={styles.errorText}>
-          {error || "Unable to find this book."}
-        </Text>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.goBack()}
+      <SafeAreaView
+        style={
+          styles.container
+        }
+        edges={[
+          "top",
+          "left",
+          "right",
+        ]}
+      >
+        <View
+          style={
+            styles.center
+          }
         >
-          <Text style={styles.primaryButtonText}>
-            Go Back
+          <Text
+            style={
+              styles.errorText
+            }
+          >
+            Book information unavailable.
           </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  const alreadyJoined = queueEntry !== null;
+  /* ================================================== */
+  /* BEFORE USER JOINS                                  */
+  /* ================================================== */
 
-  return (
-    <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>
-          Join Queue
-        </Text>
-
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+  if (!queueEntry) {
+    return (
+      <SafeAreaView
+        style={
+          styles.container
+        }
+        edges={[
+          "top",
+          "left",
+          "right",
+        ]}
       >
-        {/* Success message */}
-        {alreadyJoined ? (
-          <View style={styles.successContainer}>
-            <View style={styles.successCircle}>
-              <Text style={styles.successIcon}>
-                ✓
-              </Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={
+            styles.preJoinContent
+          }
+          showsVerticalScrollIndicator={
+            false
+          }
+        >
+          <TouchableOpacity
+            style={
+              styles.backButton
+            }
+            onPress={() =>
+              navigation.goBack()
+            }
+            activeOpacity={
+              0.7
+            }
+          >
+            <Ionicons
+              name="chevron-back"
+              size={28}
+              color={
+                THEME.blue
+              }
+            />
+          </TouchableOpacity>
 
-            <Text style={styles.successTitle}>
-              You're in the queue!
-            </Text>
-
-            <Text style={styles.successText}>
-              You have successfully joined the
-              waiting queue for this book.
-            </Text>
+          <View
+            style={
+              styles.iconCircle
+            }
+          >
+            <Ionicons
+              name="hourglass-outline"
+              size={55}
+              color="#101820"
+            />
           </View>
-        ) : (
-          <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>
-              Book currently borrowed
-            </Text>
 
-            <Text style={styles.introText}>
-              This book is currently unavailable.
-              Join the queue and we'll notify you
-              when it becomes available.
-            </Text>
-          </View>
-        )}
+          <Text
+            style={
+              styles.confirmTitle
+            }
+          >
+            Join the Queue?
+          </Text>
 
-        {/* Book */}
-        <View style={styles.bookCard}>
-          <Text style={styles.bookTitle}>
+          <Text
+            style={
+              styles.confirmBook
+            }
+          >
             {book.title}
           </Text>
 
-          <Text style={styles.bookAuthor}>
-            by {book.author}
+          <Text
+            style={
+              styles.confirmDescription
+            }
+          >
+            This book is currently borrowed.
+            Join the queue and we'll keep your
+            place until it becomes available.
           </Text>
 
-          <View style={styles.borrowedBadge}>
-            <Text style={styles.borrowedText}>
-              ● Borrowed
+          <View
+            style={
+              styles.queueInfoCard
+            }
+          >
+            <Text
+              style={
+                styles.queueInfoLabel
+              }
+            >
+              People currently waiting
+            </Text>
+
+            <Text
+              style={
+                styles.queueInfoNumber
+              }
+            >
+              {queueTotal}
             </Text>
           </View>
-        </View>
 
-        {/* Queue Information */}
-        {alreadyJoined ? (
-          <View style={styles.queueCard}>
-            <Text style={styles.sectionTitle}>
-              Your Queue Position
-            </Text>
-
-            <View style={styles.positionCircle}>
-              <Text style={styles.positionNumber}>
-                {queueEntry?.queuePosition ?? "-"}
-              </Text>
-            </View>
-
-            <Text style={styles.positionLabel}>
-              Your position in the queue
-            </Text>
-
-            <View style={styles.queueDivider} />
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>
-                People waiting
-              </Text>
-
-              <Text style={styles.infoValue}>
-                {queueTotal}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>
-                Estimated wait
-              </Text>
-
-              <Text style={styles.infoValue}>
-                {queueEntry?.estimatedWaitDays ?? 0}{" "}
-                days
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.queueCard}>
-            <Text style={styles.sectionTitle}>
-              Current Queue
-            </Text>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>
-                People waiting
-              </Text>
-
-              <Text style={styles.infoValue}>
-                {queueTotal}
-              </Text>
-            </View>
-
-            <View style={styles.queueDivider} />
-
-            <Text style={styles.waitInfo}>
-              You will be added to position{" "}
-              {queueTotal + 1}.
-            </Text>
-          </View>
-        )}
-
-        {/* Error */}
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorMessage}>
+          {error ? (
+            <Text
+              style={
+                styles.errorText
+              }
+            >
               {error}
             </Text>
-          </View>
-        ) : null}
+          ) : null}
 
-        {/* Action */}
-        {!alreadyJoined ? (
           <TouchableOpacity
             style={[
-              styles.primaryButton,
-              joining && styles.disabledButton,
+              styles.mainButton,
+
+              joining &&
+                styles.disabledButton,
             ]}
-            disabled={joining}
-            onPress={handleJoinQueue}
+            disabled={
+              joining
+            }
+            onPress={
+              handleJoinQueue
+            }
+            activeOpacity={
+              0.85
+            }
           >
             {joining ? (
               <ActivityIndicator
-                color={COLORS.white}
+                color="#FFFFFF"
               />
             ) : (
-              <Text style={styles.primaryButtonText}>
+              <Text
+                style={
+                  styles.mainButtonText
+                }
+              >
                 Confirm & Join Queue
               </Text>
             )}
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => navigation.goBack()}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  /* ================================================== */
+  /* QUEUE CONFIRMATION                                 */
+  /* ================================================== */
+
+  return (
+    <SafeAreaView
+      style={
+        styles.container
+      }
+      edges={[
+        "top",
+        "left",
+        "right",
+      ]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.content
+        }
+      >
+        {/* Back */}
+
+        <TouchableOpacity
+          style={
+            styles.backButton
+          }
+          onPress={() =>
+            navigation.goBack()
+          }
+          activeOpacity={
+            0.7
+          }
+        >
+          <Ionicons
+            name="chevron-back"
+            size={28}
+            color={
+              THEME.blue
+            }
+          />
+        </TouchableOpacity>
+
+        {/* Hourglass */}
+
+        <View
+          style={
+            styles.iconCircle
+          }
+        >
+          <Ionicons
+            name="hourglass-outline"
+            size={55}
+            color="#101820"
+          />
+        </View>
+
+        {/* Main Content */}
+
+        <Text
+          style={
+            styles.title
+          }
+        >
+          You’re in the Queue
+        </Text>
+
+        <View
+          style={
+            styles.positionRow
+          }
+        >
+          <Text
+            style={
+              styles.bookTitle
+            }
+            numberOfLines={
+              1
+            }
           >
-            <Text style={styles.secondaryButtonText}>
-              Back to Book
+            {book.title}
+          </Text>
+
+          <Text
+            style={
+              styles.positionText
+            }
+          >
+            position{" "}
+            {queueEntry.queuePosition ??
+              "-"}{" "}
+            of{" "}
+            {queueTotal}
+          </Text>
+        </View>
+
+        {/* Estimated Wait */}
+
+        <View
+          style={
+            styles.waitCard
+          }
+        >
+          <Text
+            style={
+              styles.waitLabel
+            }
+          >
+            Estimated wait
+          </Text>
+
+          <Text
+            style={
+              styles.waitValue
+            }
+          >
+            ~{" "}
+            {queueEntry.estimatedWaitDays ??
+              4}{" "}
+            Days
+          </Text>
+        </View>
+
+        {/* Notify */}
+
+        <TouchableOpacity
+          style={
+            styles.notifyRow
+          }
+          onPress={
+            handleToggleNotify
+          }
+          disabled={
+            updatingNotify
+          }
+          activeOpacity={
+            0.7
+          }
+        >
+          <View
+            style={[
+              styles.checkbox,
+
+              (queueEntry.notifyEnabled ??
+                true) &&
+                styles.checkboxChecked,
+            ]}
+          >
+            {(queueEntry.notifyEnabled ??
+              true) && (
+              <Ionicons
+                name="checkmark"
+                size={16}
+                color="#FFFFFF"
+              />
+            )}
+          </View>
+
+          <View
+            style={
+              styles.notifyTextContainer
+            }
+          >
+            <Text
+              style={
+                styles.notifyTitle
+              }
+            >
+              Notify me
             </Text>
-          </TouchableOpacity>
-        )}
+
+            <Text
+              style={
+                styles.notifySubtitle
+              }
+            >
+              Notify me when this book becomes available
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {error ? (
+          <Text
+            style={
+              styles.errorText
+            }
+          >
+            {error}
+          </Text>
+        ) : null}
+
+        {/* My Reservations */}
+
+        <TouchableOpacity
+          style={
+            styles.mainButton
+          }
+          activeOpacity={
+            0.85
+          }
+          onPress={() =>
+            navigation.navigate(
+              "MyReservations"
+            )
+          }
+        >
+          <Text
+            style={
+              styles.mainButtonText
+            }
+          >
+            My Reservations
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-  },
+/* ================================================== */
+/* STYLES                                             */
+/* ================================================== */
 
-  header: {
-    height: 64,
-    backgroundColor: COLORS.background,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
 
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      backgroundColor:
+        THEME.background,
+    },
 
-  backIcon: {
-    fontSize: 38,
-    fontWeight: "300",
-    color: COLORS.textPrimary,
-  },
+    center: {
+      flex: 1,
 
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      justifyContent:
+        "center",
 
-  headerSpacer: {
-    width: 40,
-  },
+      alignItems:
+        "center",
 
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+      paddingHorizontal:
+        30,
+    },
 
-  introContainer: {
-    marginBottom: 20,
-  },
+    loadingText: {
+      marginTop: 12,
 
-  introTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      color:
+        THEME.textSecondary,
+    },
 
-  introText: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 21,
-    color: COLORS.textSecondary,
-  },
+    /* ================================================== */
+    /* MAIN CONTENT                                       */
+    /* ================================================== */
 
-  successContainer: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
+    content: {
+      flexGrow: 1,
 
-  successCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#E8F7EE",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      paddingHorizontal:
+        28,
 
-  successIcon: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: COLORS.available,
-  },
+      /*
+       * SafeAreaView already protects
+       * the status bar area.
+       *
+       * This is only extra visual spacing.
+       */
+      paddingTop: 8,
 
-  successTitle: {
-    marginTop: 12,
-    fontSize: 22,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      paddingBottom:
+        40,
+    },
 
-  successText: {
-    marginTop: 6,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: "center",
-    color: COLORS.textSecondary,
-  },
+    preJoinContent: {
+      flexGrow: 1,
 
-  bookCard: {
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+      paddingHorizontal:
+        28,
 
-  bookTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      paddingTop: 8,
 
-  bookAuthor: {
-    marginTop: 5,
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
+      paddingBottom:
+        40,
 
-  borrowedBadge: {
-    alignSelf: "flex-start",
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    backgroundColor: "#FDECEC",
-  },
+      alignItems:
+        "center",
+    },
 
-  borrowedText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.borrowed,
-  },
+    /* ================================================== */
+    /* BACK BUTTON                                        */
+    /* ================================================== */
 
-  queueCard: {
-    marginTop: 16,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+    backButton: {
+      width: 46,
 
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-  },
+      height: 46,
 
-  positionCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#E8F1FC",
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      justifyContent:
+        "center",
 
-  positionNumber: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
+      alignItems:
+        "flex-start",
 
-  positionLabel: {
-    marginTop: 10,
-    textAlign: "center",
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
+      alignSelf:
+        "flex-start",
 
-  queueDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 16,
-  },
+      marginLeft:
+        -10,
+    },
 
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    minHeight: 42,
-  },
+    /* ================================================== */
+    /* ICON                                               */
+    /* ================================================== */
 
-  infoLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
+    iconCircle: {
+      width: 104,
 
-  infoValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      height: 104,
 
-  waitInfo: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: COLORS.textSecondary,
-  },
+      borderRadius:
+        52,
 
-  errorContainer: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: "#FDECEC",
-  },
+      backgroundColor:
+        THEME.iconBackground,
 
-  errorMessage: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: COLORS.error,
-  },
+      justifyContent:
+        "center",
 
-  primaryButton: {
-    height: 52,
-    marginTop: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      alignItems:
+        "center",
 
-  disabledButton: {
-    opacity: 0.6,
-  },
+      alignSelf:
+        "center",
 
-  primaryButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "700",
-  },
+      marginTop:
+        35,
 
-  secondaryButton: {
-    height: 52,
-    marginTop: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+      marginBottom:
+        46,
+    },
 
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "700",
-  },
+    /* ================================================== */
+    /* TITLE                                              */
+    /* ================================================== */
 
-  centerContainer: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 30,
-  },
+    title: {
+      fontSize: 23,
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
+      lineHeight: 29,
 
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
+      fontWeight:
+        "800",
 
-  errorText: {
-    marginTop: 8,
-    fontSize: 14,
-    textAlign: "center",
-    color: COLORS.textSecondary,
-  },
-});
+      color:
+        THEME.text,
+
+      textAlign:
+        "center",
+    },
+
+    /* ================================================== */
+    /* POSITION                                           */
+    /* ================================================== */
+
+    positionRow: {
+      marginTop: 3,
+
+      flexDirection:
+        "row",
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+
+      flexWrap:
+        "wrap",
+
+      columnGap: 10,
+    },
+
+    bookTitle: {
+      maxWidth:
+        "58%",
+
+      fontSize: 14,
+
+      fontWeight:
+        "500",
+
+      color:
+        THEME.text,
+    },
+
+    positionText: {
+      fontSize: 14,
+
+      color:
+        THEME.textSecondary,
+    },
+
+    /* ================================================== */
+    /* WAIT CARD                                          */
+    /* ================================================== */
+
+    waitCard: {
+      height: 122,
+
+      marginTop:
+        36,
+
+      borderRadius:
+        7,
+
+      borderWidth:
+        1,
+
+      borderColor:
+        THEME.orangeBorder,
+
+      backgroundColor:
+        THEME.orangeLight,
+
+      alignItems:
+        "center",
+
+      justifyContent:
+        "center",
+    },
+
+    waitLabel: {
+      fontSize: 12,
+
+      color:
+        THEME.text,
+    },
+
+    waitValue: {
+      marginTop: 3,
+
+      fontSize: 19,
+
+      fontWeight:
+        "800",
+
+      color:
+        THEME.text,
+    },
+
+    /* ================================================== */
+    /* NOTIFY                                             */
+    /* ================================================== */
+
+    notifyRow: {
+      marginTop:
+        21,
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      paddingHorizontal:
+        3,
+    },
+
+    checkbox: {
+      width: 22,
+
+      height: 22,
+
+      borderRadius:
+        5,
+
+      borderWidth:
+        2,
+
+      borderColor:
+        THEME.orange,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+    },
+
+    checkboxChecked: {
+      backgroundColor:
+        THEME.orange,
+
+      borderColor:
+        THEME.orange,
+    },
+
+    notifyTextContainer: {
+      marginLeft: 10,
+
+      flex: 1,
+    },
+
+    notifyTitle: {
+      fontSize: 14,
+
+      fontWeight:
+        "700",
+
+      color:
+        THEME.text,
+    },
+
+    notifySubtitle: {
+      marginTop: 1,
+
+      fontSize: 11,
+
+      color:
+        THEME.textSecondary,
+    },
+
+    /* ================================================== */
+    /* BUTTON                                             */
+    /* ================================================== */
+
+    mainButton: {
+      height: 48,
+
+      marginTop:
+        28,
+
+      marginHorizontal:
+        32,
+
+      borderRadius:
+        8,
+
+      backgroundColor:
+        THEME.orange,
+
+      justifyContent:
+        "center",
+
+      alignItems:
+        "center",
+    },
+
+    mainButtonText: {
+      color:
+        "#FFFFFF",
+
+      fontSize: 14,
+
+      fontWeight:
+        "700",
+    },
+
+    disabledButton: {
+      opacity:
+        0.65,
+    },
+
+    /* ================================================== */
+    /* ERROR                                              */
+    /* ================================================== */
+
+    errorText: {
+      marginTop:
+        15,
+
+      color:
+        "#D32F2F",
+
+      textAlign:
+        "center",
+
+      fontSize:
+        13,
+    },
+
+    /* ================================================== */
+    /* PRE-JOIN                                           */
+    /* ================================================== */
+
+    confirmTitle: {
+      fontSize: 24,
+
+      fontWeight:
+        "800",
+
+      color:
+        THEME.text,
+
+      textAlign:
+        "center",
+    },
+
+    confirmBook: {
+      marginTop: 8,
+
+      fontSize: 17,
+
+      fontWeight:
+        "700",
+
+      color:
+        THEME.text,
+
+      textAlign:
+        "center",
+    },
+
+    confirmDescription: {
+      marginTop: 12,
+
+      paddingHorizontal:
+        10,
+
+      fontSize: 14,
+
+      lineHeight: 21,
+
+      color:
+        THEME.textSecondary,
+
+      textAlign:
+        "center",
+    },
+
+    queueInfoCard: {
+      width: "100%",
+
+      marginTop: 32,
+
+      paddingVertical:
+        22,
+
+      borderRadius:
+        10,
+
+      borderWidth: 1,
+
+      borderColor:
+        THEME.orangeBorder,
+
+      backgroundColor:
+        THEME.orangeLight,
+
+      alignItems:
+        "center",
+    },
+
+    queueInfoLabel: {
+      fontSize: 13,
+
+      color:
+        THEME.textSecondary,
+    },
+
+    queueInfoNumber: {
+      marginTop: 3,
+
+      fontSize: 23,
+
+      fontWeight:
+        "800",
+
+      color:
+        THEME.text,
+    },
+  });

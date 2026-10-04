@@ -1,7 +1,6 @@
 export type BookAvailabilityStatus =
   | "available"
-  | "borrowed"
-  | "reserved";
+  | "borrowed";
 
 export interface Book {
   id: string;
@@ -24,6 +23,10 @@ export interface UserProfile {
   role: "student" | "staff";
 }
 
+/* -------------------------------------------------- */
+/* BOOK RESERVATIONS                                  */
+/* -------------------------------------------------- */
+
 export type BookReservationStatus =
   | "reserved"
   | "collected"
@@ -34,24 +37,45 @@ export interface BookReservation {
   id: string;
   userId: string;
   bookId: string;
+
   reservedAt: string;
   collectionDeadline?: string;
+
   status: BookReservationStatus;
 
   book?: Book;
 }
 
+/* -------------------------------------------------- */
+/* BOOK QUEUE                                         */
+/* -------------------------------------------------- */
+
+export type BookQueueStatus =
+  | "waiting"
+  | "notified"
+  | "completed"
+  | "cancelled";
+
 export interface BookQueueEntry {
   id: string;
   userId: string;
   bookId: string;
+
   queuePosition?: number;
   estimatedWaitDays?: number;
+
   joinedAt: string;
-  status: "waiting" | "notified" | "completed" | "cancelled";
+
+  notifyEnabled?: boolean;
+
+  status: BookQueueStatus;
 
   book?: Book;
 }
+
+/* -------------------------------------------------- */
+/* ROOMS                                              */
+/* -------------------------------------------------- */
 
 export type RoomType =
   | "study_room"
@@ -72,6 +96,10 @@ export interface Room {
   status: RoomStatus;
 }
 
+/* -------------------------------------------------- */
+/* ROOM BOOKINGS                                      */
+/* -------------------------------------------------- */
+
 export type RoomBookingStatus =
   | "active"
   | "completed"
@@ -89,11 +117,14 @@ export interface RoomBooking {
   participants: number;
 
   status: RoomBookingStatus;
-
   createdAt: string;
 
   room?: Room;
 }
+
+/* -------------------------------------------------- */
+/* BORROWED BOOKS                                     */
+/* -------------------------------------------------- */
 
 export interface BorrowedBook {
   id: string;
@@ -104,10 +135,17 @@ export interface BorrowedBook {
   dueDate: string;
   returnedAt?: string;
 
-  status: "borrowed" | "returned" | "overdue";
+  status:
+    | "borrowed"
+    | "returned"
+    | "overdue";
 
   book?: Book;
 }
+
+/* -------------------------------------------------- */
+/* NOTIFICATIONS                                      */
+/* -------------------------------------------------- */
 
 export type NotificationType =
   | "book_available"
@@ -126,6 +164,5 @@ export interface Notification {
   type: NotificationType;
 
   isRead: boolean;
-
   createdAt: string;
 }
