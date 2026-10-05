@@ -3,6 +3,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
+import MyBookReservations from "../screens/activity/MyBookReservations";
+import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
+import BorrowedBooks from "../screens/activity/BorrowedBooks";
+import ReservationDetails from "../screens/activity/ReservationDetails";
+import BookingDetails from "../screens/activity/BookingDetails";
 import SearchResultsScreen from "../screens/books/SearchResultsScreen";
 
 // =========================================================
@@ -144,49 +149,16 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="BookingDetails">
-        {() => (
-          <PlaceholderScreen
-            title="Booking Details"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen name="BookingDetails" component={BookingDetails} />
 
       {/* =================================================
           MEMBER 4 - ACTIVITY
       ================================================= */}
 
-      <Stack.Screen name="MyBookReservations">
-        {() => (
-          <PlaceholderScreen
-            title="My Book Reservations"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="MyStudyRoomBookings">
-        {() => (
-          <PlaceholderScreen
-            title="My Study Room Bookings"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BorrowedBooks">
-        {() => (
-          <PlaceholderScreen
-            title="Borrowed Books"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="ReservationDetails">
-        {() => (
-          <PlaceholderScreen
-            title="Reservation Details"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen name="MyBookReservations" component={MyBookReservations} />
+      <Stack.Screen name="MyStudyRoomBookings" component={MyStudyRoomBookings} />
+      <Stack.Screen name="BorrowedBooks" component={BorrowedBooks} />
+      <Stack.Screen name="ReservationDetails" component={ReservationDetails} />
     </Stack.Navigator>
   );
 }
