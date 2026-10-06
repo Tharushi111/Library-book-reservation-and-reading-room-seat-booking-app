@@ -1,27 +1,44 @@
 {
   "expo": {
-    "name": "Library-book-reservation-and-reading-room-seat-booking-app",
-    "slug": "Library-book-reservation-and-reading-room-seat-booking-app",
+    "name": "SLIIT Library",
+    "slug": "sliit-library",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+
+    "icon": "./assets/app-icon.png",
+
     "userInterfaceStyle": "light",
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/app-icon.png"
     },
+
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B4DA2"
       },
+
       "predictiveBackGestureEnabled": false,
+
       "package": "com.tharushi111.Librarybookreservationandreadingroomseatbookingapp"
     },
+
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B4DA2"
+        }
+      ]
+    ]
   }
 }
