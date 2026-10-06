@@ -29,6 +29,9 @@ import ProfileScreen from "../screens/profile/ProfileScreen";
 // Replace these later with their real screens.
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 
+// MEMBER 3
+import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
+
 const Tab =
   createBottomTabNavigator<BottomTabParamList>();
 
@@ -231,18 +234,13 @@ export default function BottomTabNavigator() {
 
       <Tab.Screen
         name="Spaces"
+        component={StudyRoomsScreen}
         options={{
           // Internal route remains "Spaces"
           // but user sees "Seats"
           tabBarLabel: "Seats",
         }}
-      >
-        {() => (
-          <PlaceholderScreen
-            title="Seats"
-          />
-        )}
-      </Tab.Screen>
+      />
 
       {/* =================================================
           NOTIFICATIONS - MEMBER 1

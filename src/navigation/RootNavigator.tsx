@@ -7,7 +7,6 @@ import MyBookReservations from "../screens/activity/MyBookReservations";
 import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
 import BorrowedBooks from "../screens/activity/BorrowedBooks";
 import ReservationDetails from "../screens/activity/ReservationDetails";
-import BookingDetails from "../screens/activity/BookingDetails";
 import SearchResultsScreen from "../screens/books/SearchResultsScreen";
 
 // =========================================================
@@ -20,6 +19,16 @@ import BookSearchScreen from "../screens/books/BookSearchScreen";
 import RecentSearchesScreen from "../screens/books/RecentSearchesScreen";
 
 import { RootStackParamList } from "./types";
+
+// =========================================================
+// MEMBER 3 - STUDY SPACES
+// =========================================================
+
+import SpaceReservationScreen from "../screens/spaces/SpaceReservationScreen";
+import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
+import BookStudyRoomScreen from "../screens/spaces/BookStudyRoomScreen";
+import BookingConfirmationScreen from "../screens/spaces/BookingConfirmationScreen";
+import BookingDetailsScreen from "../screens/spaces/BookingDetailsScreen";
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -76,7 +85,7 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-     <Stack.Screen
+      <Stack.Screen
         name="SearchResults"
         component={SearchResultsScreen}
       />
@@ -117,39 +126,11 @@ export default function RootNavigator() {
           MEMBER 3 - STUDY SPACES
       ================================================= */}
 
-      <Stack.Screen name="SpaceReservation">
-        {() => (
-          <PlaceholderScreen
-            title="Space Reservation"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="StudyRooms">
-        {() => (
-          <PlaceholderScreen
-            title="Study Rooms"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookStudyRoom">
-        {() => (
-          <PlaceholderScreen
-            title="Book Study Room"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookingConfirmation">
-        {() => (
-          <PlaceholderScreen
-            title="Booking Confirmation"
-          />
-        )}
-      </Stack.Screen>
-
-      <Stack.Screen name="BookingDetails" component={BookingDetails} />
+      <Stack.Screen name="SpaceReservation" component={SpaceReservationScreen} />
+      <Stack.Screen name="StudyRooms" component={StudyRoomsScreen} />
+      <Stack.Screen name="BookStudyRoom" component={BookStudyRoomScreen} />
+      <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
+      <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
 
       {/* =================================================
           MEMBER 4 - ACTIVITY
