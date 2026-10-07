@@ -1,6 +1,5 @@
 import { supabase } from "./supabase";
 import { Room, RoomBooking, RoomType } from "../types";
-import { ensureDevSession } from "../utils/devAuth"; // TEMP: remove when real Login is merged
 import {
   Interval,
   ROOM_TYPE_LABEL,
@@ -66,7 +65,6 @@ const mapBooking = (row: BookingRow): RoomBooking => {
 };
 
 async function requireUser() {
-  await ensureDevSession(); // TEMP: remove when real Login is merged
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -97,7 +95,6 @@ function toError(error: DbError): Error {
 /* ---------- Role ---------- */
 
 export async function getCurrentUserRole(): Promise<UserRole> {
-  await ensureDevSession(); // TEMP: remove when real Login is merged
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -150,7 +147,6 @@ export function validateBooking(room: Room, input: BookingInput, role: UserRole)
 /* ---------- READ ---------- */
 
 export async function getRooms(roomType?: RoomType): Promise<Room[]> {
-  await ensureDevSession(); // TEMP: remove when real Login is merged
 
   let query = supabase.from("rooms").select("*").order("name", { ascending: true });
   if (roomType) query = query.eq("room_type", roomType);
@@ -161,7 +157,6 @@ export async function getRooms(roomType?: RoomType): Promise<Room[]> {
 }
 
 export async function getRoomById(roomId: string): Promise<Room> {
-  await ensureDevSession(); // TEMP: remove when real Login is merged
 
   const { data, error } = await supabase.from("rooms").select("*").eq("id", roomId).single();
   if (error) throw toError(error);

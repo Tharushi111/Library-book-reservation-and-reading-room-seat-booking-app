@@ -1,4 +1,8 @@
 import { supabase } from "./supabase";
+import {
+  cancelReservation as cancelBookReservation,
+  expireOverdueReservations,
+} from "./bookService";
 
 export interface ReservationItem {
   id: string;
@@ -198,6 +202,8 @@ function calculateDueIn(dueDateStr: string): string {
  */
 export async function getUserReservations(): Promise<ReservationItem[]> {
   try {
+        await expireOverdueReservations();
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -271,14 +277,7 @@ export async function cancelReservation(reservationId: string): Promise<{ succes
       return { success: true, message: "Reservation cancelled successfully" };
     }
 
-    const { error } = await supabase
-      .from("book_reservations")
-      .update({ status: "cancelled" })
-      .eq("id", reservationId);
-
-    if (error) {
-      throw error;
-    }
+    await cancelBookReservation(reservationId);
 
     return { success: true, message: "Reservation cancelled successfully" };
   } catch (err: any) {

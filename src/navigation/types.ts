@@ -32,10 +32,6 @@ export type RootStackParamList = {
     bookId: string;
   };
 
-  BorrowedBookDetails: {
-    bookId: string;
-  };
-
   ReservationConfirmation: {
     reservationId?: string;
   };
@@ -73,6 +69,10 @@ export type RootStackParamList = {
   MyStudyRoomBookings: undefined;
 
   BorrowedBooks: undefined;
+
+  ActivityBookingDetails: {
+    bookingId: string;
+  };
 
   ReservationDetails: {
     reservationId: string;

@@ -7,6 +7,20 @@ import type {
   BookReservation,
 } from "../types";
 
+export async function expireOverdueReservations(): Promise<void> {
+  const { error } = await supabase.rpc(
+    "expire_overdue_book_reservations"
+  );
+
+  if (error) {
+    console.error(
+      "Error expiring overdue reservations:",
+      error
+    );
+    throw error;
+  }
+}
+
 /* MAPPERS */
 function mapBook(
   row: any,
@@ -288,6 +302,8 @@ export async function reserveBook(
 ): Promise<BookReservation> {
   const userId =
     await getCurrentUserId();
+    // Release reservations whose collection deadline has passed.
+  await expireOverdueReservations();
 
   console.log(
     "Reserving book:",
@@ -972,7 +988,9 @@ export function subscribeToBookAvailability(
   const channel =
     supabase
       .channel(
-        "global-book-availability"
+        `book-availability-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2)}`
       )
       .on(
         "postgres_changes",

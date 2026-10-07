@@ -2,7 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
-import PlaceholderScreen from "../screens/PlaceholderScreen";
+
 
 // =========================================================
 // MEMBER 1 - CORE ACCESS
@@ -41,7 +41,7 @@ import MyBookReservations from "../screens/activity/MyBookReservations";
 import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
 import BorrowedBooks from "../screens/activity/BorrowedBooks";
 import ReservationDetails from "../screens/activity/ReservationDetails";
-
+import ActivityBookingDetails from "../screens/activity/BookingDetails";
 import { RootStackParamList } from "./types";
 
 const Stack =
@@ -102,14 +102,6 @@ export default function RootNavigator() {
         name="BookDetails"
         component={BookDetailsScreen}
       />
-
-      <Stack.Screen name="BorrowedBookDetails">
-        {() => (
-          <PlaceholderScreen
-            title="Borrowed Book Details"
-          />
-        )}
-      </Stack.Screen>
 
       <Stack.Screen
         name="ReservationConfirmation"
@@ -172,6 +164,11 @@ export default function RootNavigator() {
       <Stack.Screen
         name="ReservationDetails"
         component={ReservationDetails}
+      />
+
+      <Stack.Screen
+        name="ActivityBookingDetails"
+        component={ActivityBookingDetails}
       />
     </Stack.Navigator>
   );
