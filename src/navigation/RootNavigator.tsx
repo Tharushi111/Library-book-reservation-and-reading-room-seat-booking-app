@@ -3,11 +3,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./BottomTabNavigator";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
-import MyBookReservations from "../screens/activity/MyBookReservations";
-import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
-import BorrowedBooks from "../screens/activity/BorrowedBooks";
-import ReservationDetails from "../screens/activity/ReservationDetails";
-import SearchResultsScreen from "../screens/books/SearchResultsScreen";
 
 // =========================================================
 // MEMBER 1 - CORE ACCESS
@@ -18,7 +13,15 @@ import AccountSettingsScreen from "../screens/profile/AccountSettingsScreen";
 import BookSearchScreen from "../screens/books/BookSearchScreen";
 import RecentSearchesScreen from "../screens/books/RecentSearchesScreen";
 
-import { RootStackParamList } from "./types";
+// =========================================================
+// MEMBER 2 - BOOKS
+// =========================================================
+
+import BookCatalogueScreen from "../screens/books/bookCatalogueScreen";
+import BookDetailsScreen from "../screens/books/bookDetailsScreen";
+import ReservationConfirmationScreen from "../screens/books/reservationConfirmationScreen";
+import QueueConfirmationScreen from "../screens/books/queueConfirmationScreen";
+import SearchResultsScreen from "../screens/books/SearchResultsScreen";
 
 // =========================================================
 // MEMBER 3 - STUDY SPACES
@@ -29,6 +32,17 @@ import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
 import BookStudyRoomScreen from "../screens/spaces/BookStudyRoomScreen";
 import BookingConfirmationScreen from "../screens/spaces/BookingConfirmationScreen";
 import BookingDetailsScreen from "../screens/spaces/BookingDetailsScreen";
+
+// =========================================================
+// MEMBER 4 - ACTIVITY
+// =========================================================
+
+import MyBookReservations from "../screens/activity/MyBookReservations";
+import MyStudyRoomBookings from "../screens/activity/MyStudyRoomBookings";
+import BorrowedBooks from "../screens/activity/BorrowedBooks";
+import ReservationDetails from "../screens/activity/ReservationDetails";
+
+import { RootStackParamList } from "./types";
 
 const Stack =
   createNativeStackNavigator<RootStackParamList>();
@@ -55,19 +69,16 @@ export default function RootNavigator() {
         component={BottomTabNavigator}
       />
 
-      {/* YOUR BOOK SEARCH SCREEN */}
       <Stack.Screen
         name="BookSearch"
         component={BookSearchScreen}
       />
 
-      {/* YOUR RECENT SEARCHES SCREEN */}
       <Stack.Screen
         name="RecentSearches"
         component={RecentSearchesScreen}
       />
 
-      {/* YOUR EDIT PROFILE / ACCOUNT SETTINGS */}
       <Stack.Screen
         name="AccountSettings"
         component={AccountSettingsScreen}
@@ -77,26 +88,20 @@ export default function RootNavigator() {
           MEMBER 2 - BOOKS
       ================================================= */}
 
-      <Stack.Screen name="BookCatalogue">
-        {() => (
-          <PlaceholderScreen
-            title="Book Catalogue"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="BookCatalogue"
+        component={BookCatalogueScreen}
+      />
 
       <Stack.Screen
         name="SearchResults"
         component={SearchResultsScreen}
       />
 
-      <Stack.Screen name="BookDetails">
-        {() => (
-          <PlaceholderScreen
-            title="Book Details"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="BookDetails"
+        component={BookDetailsScreen}
+      />
 
       <Stack.Screen name="BorrowedBookDetails">
         {() => (
@@ -106,40 +111,68 @@ export default function RootNavigator() {
         )}
       </Stack.Screen>
 
-      <Stack.Screen name="ReservationConfirmation">
-        {() => (
-          <PlaceholderScreen
-            title="Reservation Confirmation"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="ReservationConfirmation"
+        component={ReservationConfirmationScreen}
+      />
 
-      <Stack.Screen name="QueueConfirmation">
-        {() => (
-          <PlaceholderScreen
-            title="Queue Confirmation"
-          />
-        )}
-      </Stack.Screen>
+      <Stack.Screen
+        name="QueueConfirmation"
+        component={QueueConfirmationScreen}
+      />
 
       {/* =================================================
           MEMBER 3 - STUDY SPACES
       ================================================= */}
 
-      <Stack.Screen name="SpaceReservation" component={SpaceReservationScreen} />
-      <Stack.Screen name="StudyRooms" component={StudyRoomsScreen} />
-      <Stack.Screen name="BookStudyRoom" component={BookStudyRoomScreen} />
-      <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
-      <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
+      <Stack.Screen
+        name="SpaceReservation"
+        component={SpaceReservationScreen}
+      />
+
+      <Stack.Screen
+        name="StudyRooms"
+        component={StudyRoomsScreen}
+      />
+
+      <Stack.Screen
+        name="BookStudyRoom"
+        component={BookStudyRoomScreen}
+      />
+
+      <Stack.Screen
+        name="BookingConfirmation"
+        component={BookingConfirmationScreen}
+      />
+
+      <Stack.Screen
+        name="BookingDetails"
+        component={BookingDetailsScreen}
+      />
 
       {/* =================================================
           MEMBER 4 - ACTIVITY
       ================================================= */}
 
-      <Stack.Screen name="MyBookReservations" component={MyBookReservations} />
-      <Stack.Screen name="MyStudyRoomBookings" component={MyStudyRoomBookings} />
-      <Stack.Screen name="BorrowedBooks" component={BorrowedBooks} />
-      <Stack.Screen name="ReservationDetails" component={ReservationDetails} />
+      <Stack.Screen
+        name="MyBookReservations"
+        component={MyBookReservations}
+      />
+
+      <Stack.Screen
+        name="MyStudyRoomBookings"
+        component={MyStudyRoomBookings}
+      />
+
+      <Stack.Screen
+        name="BorrowedBooks"
+        component={BorrowedBooks}
+      />
+
+      <Stack.Screen
+        name="ReservationDetails"
+        component={ReservationDetails}
+      />
     </Stack.Navigator>
   );
 }

@@ -11,25 +11,42 @@ import {
 } from "@react-navigation/bottom-tabs";
 
 import {
+  useNavigation,
+} from "@react-navigation/native";
+
+import {
   Ionicons,
 } from "@expo/vector-icons";
 
 import {
   BottomTabParamList,
+  RootStackParamList,
 } from "./types";
+
+import {
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 
 import { COLORS } from "../constants/colors";
 
+// =========================================================
 // MEMBER 1
+// =========================================================
+
 import HomeScreen from "../screens/home/HomeScreen";
 import NotificationsScreen from "../screens/notifications/NotificationsScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 
-// Temporary screens for other members.
-// Replace these later with their real screens.
+// =========================================================
+// MEMBER 2
+// =========================================================
+
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 
+// =========================================================
 // MEMBER 3
+// =========================================================
+
 import StudyRoomsScreen from "../screens/spaces/StudyRoomsScreen";
 
 const Tab =
@@ -42,6 +59,9 @@ type IconName =
   React.ComponentProps<
     typeof Ionicons
   >["name"];
+
+type RootNavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
 
 // =========================================================
 // ICONS
@@ -87,6 +107,9 @@ const getTabIcon = (
 // =========================================================
 
 export default function BottomTabNavigator() {
+  const navigation =
+    useNavigation<RootNavigationProp>();
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -181,7 +204,6 @@ export default function BottomTabNavigator() {
 
           paddingTop: 4,
 
-          // Rounded top corners
           borderTopLeftRadius: 22,
           borderTopRightRadius: 22,
 
@@ -217,6 +239,15 @@ export default function BottomTabNavigator() {
 
       <Tab.Screen
         name="Books"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+
+            navigation.navigate(
+              "BookCatalogue"
+            );
+          },
+        }}
         options={{
           tabBarLabel: "Books",
         }}
@@ -236,8 +267,6 @@ export default function BottomTabNavigator() {
         name="Spaces"
         component={StudyRoomsScreen}
         options={{
-          // Internal route remains "Spaces"
-          // but user sees "Seats"
           tabBarLabel: "Seats",
         }}
       />
