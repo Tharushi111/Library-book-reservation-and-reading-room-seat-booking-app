@@ -1,291 +1,1541 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, {
 
-import { RootStackParamList } from "../../navigation/types";
+  useCallback,
+
+  useEffect,
+
+  useState,
+
+} from "react";
+
+
+
 import {
-  BusySlot,
-  cancelRoomBooking,
-  getBookingById,
-  getRoomBusySlots,
-  updateRoomBookingTimes,
-} from "../../services/roomService";
-import { RoomBooking } from "../../types";
-import { ROOM_TYPE_LABEL, formatDisplayDate, getErrorMessage, hasStarted } from "../../utils/spaceUtils";
-import { ErrorView, LoadingView, PrimaryButton, ScreenHeader, StatusBadge } from "./SpacesUI";
-import TimeSlotPicker from "./TimeSlotPicker";
-import { theme } from "./spacesTheme";
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, "BookingDetails">;
+  ActivityIndicator,
 
-export default function BookingDetailsScreen() {
-  const navigation = useNavigation<Nav>();
-  const { params } = useRoute<Route>();
+  Alert,
 
-  const [booking, setBooking] = useState<RoomBooking | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  Image,
 
-  const [confirming, setConfirming] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  ScrollView,
 
-  // Change-time panel
-  const [editing, setEditing] = useState(false);
-  const [editStart, setEditStart] = useState("");
-  const [editEnd, setEditEnd] = useState("");
-  const [busy, setBusy] = useState<BusySlot[]>([]);
-  const [busyLoading, setBusyLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
+  StyleSheet,
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setBooking(await getBookingById(params.bookingId));
-    } catch (e) {
-      setError(getErrorMessage(e, "Could not load this booking."));
-    } finally {
-      setLoading(false);
-    }
-  }, [params.bookingId]);
+  Text,
+
+  TouchableOpacity,
+
+  View,
+
+} from "react-native";
+
+
+
+import {
+
+  useFocusEffect,
+
+  useNavigation,
+
+  useRoute,
+
+} from "@react-navigation/native";
+
+
+
+import {
+
+  useSafeAreaInsets,
+
+} from "react-native-safe-area-context";
+
+
+
+import type {
+
+  Book,
+
+} from "../../types";
+
+
+
+import {
+
+  getBookById,
+
+  reserveBook,
+
+  subscribeToBookAvailability,
+
+} from "../../services/bookService";
+
+
+
+type RouteParams = {
+
+  bookId: string;
+
+};
+
+
+
+const THEME = {
+
+  white:
+
+    "#FFFFFF",
+
+
+
+  blue:
+
+    "#0057B8",
+
+
+
+  orange:
+
+    "#FF6525",
+
+
+
+  text:
+
+    "#111111",
+
+
+
+  secondary:
+
+    "#777777",
+
+
+
+  availableBg:
+
+    "#9BF09B",
+
+
+
+  availableText:
+
+    "#168324",
+
+
+
+  borrowedBg:
+
+    "#FFACB0",
+
+
+
+  borrowedText:
+
+    "#E00013",
+
+};
+
+
+
+export default function BookDetailsScreen() {
+
+  const navigation =
+
+    useNavigation<any>();
+
+
+
+  const route =
+
+    useRoute();
+
+
+
+  const insets =
+
+    useSafeAreaInsets();
+
+
+
+  const {
+
+    bookId,
+
+  } =
+
+    route.params as RouteParams;
+
+
+
+  const [
+
+    book,
+
+    setBook,
+
+  ] =
+
+    useState<Book | null>(
+
+      null
+
+    );
+
+
+
+  const [
+
+    loading,
+
+    setLoading,
+
+  ] =
+
+    useState(true);
+
+
+
+  const [
+
+    reserving,
+
+    setReserving,
+
+  ] =
+
+    useState(false);
+
+
+
+  const loadBook =
+
+    useCallback(
+
+      async (
+
+        showLoader =
+
+          true
+
+      ) => {
+
+        try {
+
+          if (
+
+            showLoader
+
+          ) {
+
+            setLoading(
+
+              true
+
+            );
+
+          }
+
+
+
+          const data =
+
+            await getBookById(
+
+              bookId
+
+            );
+
+
+
+          setBook(
+
+            data
+
+          );
+
+        } catch (
+
+          error: any
+
+        ) {
+
+          console.error(
+
+            "Failed to load book:",
+
+            error
+
+          );
+
+
+
+          Alert.alert(
+
+            "Error",
+
+            error?.message ??
+
+              "Unable to load book."
+
+          );
+
+        } finally {
+
+          if (
+
+            showLoader
+
+          ) {
+
+            setLoading(
+
+              false
+
+            );
+
+          }
+
+        }
+
+      },
+
+      [
+
+        bookId,
+
+      ]
+
+    );
+
+
+
+  useEffect(
+
+    () => {
+
+      loadBook();
+
+    },
+
+    [
+
+      loadBook,
+
+    ]
+
+  );
+
+
+
+  useFocusEffect(
+
+    useCallback(
+
+      () => {
+
+        loadBook(
+
+          false
+
+        );
+
+      },
+
+      [
+
+        loadBook,
+
+      ]
+
+    )
+
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = subscribeToBookAvailability(() => {
+      loadBook(false);
+    });
 
-  const loadBusy = useCallback(async (b: RoomBooking) => {
-    try {
-      setBusyLoading(true);
-      setEditError(null);
-      const slots = await getRoomBusySlots(b.roomId, b.bookingDate);
-      setBusy(slots.filter((s) => s.bookingId !== b.id)); // this booking's own slot stays free for it
-    } catch (e) {
-      setBusy([]);
-      setEditError(getErrorMessage(e, "Could not check which times are free."));
-    } finally {
-      setBusyLoading(false);
-    }
-  }, []);
+    return () => {
+      unsubscribe();
+    };
+  }, [loadBook]);
 
-  const startEditing = () => {
-    if (!booking) return;
-    setNotice(null);
-    setActionError(null);
-    setConfirming(false);
-    setEditStart(booking.startTime);
-    setEditEnd(booking.endTime);
-    setEditing(true);
-    loadBusy(booking);
-  };
 
-  const onSave = async () => {
-    if (!booking) return;
-    try {
-      setSaving(true);
-      setEditError(null);
-      const updated = await updateRoomBookingTimes(booking.id, editStart, editEnd);
-      setBooking(updated);
-      setEditing(false);
-      setNotice("Your booking time has been updated.");
-    } catch (e) {
-      setEditError(getErrorMessage(e, "Could not update the booking."));
-      loadBusy(booking); // someone may have just taken the slot, so refresh what is free
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  const onCancel = async () => {
-    if (!booking) return;
-    try {
-      setCancelling(true);
-      setActionError(null);
-      await cancelRoomBooking(booking.id);
-      setConfirming(false);
-      setNotice("Your booking has been cancelled.");
-      setBooking(await getBookingById(booking.id)); // re-query so the screen shows the new status
-    } catch (e) {
-      setActionError(getErrorMessage(e, "Could not cancel the booking."));
-    } finally {
-      setCancelling(false);
-    }
-  };
+  const handleReserve =
 
-  if (loading) return <LoadingView />;
-  if (error || !booking) return <ErrorView message={error ?? "Booking not found."} onRetry={load} />;
+    async () => {
 
-  const statusColor =
-    booking.status === "active"
-      ? theme.success
-      : booking.status === "cancelled"
-      ? theme.danger
-      : theme.textSecondary;
-  const statusLabel =
-    booking.status === "active" ? "Active" : booking.status === "cancelled" ? "Cancelled" : "Completed";
+      if (
 
-  const isActive = booking.status === "active";
-  const started = hasStarted(booking.bookingDate, booking.startTime);
-  const canEdit = isActive && !started;
-  const unchanged = editStart === booking.startTime && editEnd === booking.endTime;
+        !book ||
+
+        reserving
+
+      ) {
+
+        return;
+
+      }
+
+
+
+      try {
+
+        setReserving(
+
+          true
+
+        );
+
+
+
+        const reservation =
+
+          await reserveBook(
+
+            book.id
+
+          );
+
+
+
+        navigation.navigate(
+
+          "ReservationConfirmation",
+
+          {
+
+            reservationId:
+
+              reservation.id,
+
+          }
+
+        );
+
+      } catch (
+
+        error: any
+
+      ) {
+
+        console.error(
+
+          "Reservation error:",
+
+          error
+
+        );
+
+
+
+        Alert.alert(
+
+          "Reservation Failed",
+
+          error?.message ??
+
+            "Unable to reserve book."
+
+        );
+
+
+
+        await loadBook(
+
+          false
+
+        );
+
+      } finally {
+
+        setReserving(
+
+          false
+
+        );
+
+      }
+
+    };
+
+
+
+  if (loading) {
+
+    return (
+
+      <View
+
+        style={
+
+          styles.center
+
+        }
+
+      >
+
+        <ActivityIndicator
+
+          size="large"
+
+          color={
+
+            THEME.orange
+
+          }
+
+        />
+
+
+
+        <Text
+
+          style={
+
+            styles.loadingText
+
+          }
+
+        >
+
+          Loading book details...
+
+        </Text>
+
+      </View>
+
+    );
+
+  }
+
+
+
+  if (!book) {
+
+    return (
+
+      <View
+
+        style={
+
+          styles.center
+
+        }
+
+      >
+
+        <Text
+
+          style={
+
+            styles.errorTitle
+
+          }
+
+        >
+
+          Book not found
+
+        </Text>
+
+
+
+        <TouchableOpacity
+
+          style={
+
+            styles.primaryButton
+
+          }
+
+          onPress={() =>
+
+            navigation.goBack()
+
+          }
+
+        >
+
+          <Text
+
+            style={
+
+              styles.primaryButtonText
+
+            }
+
+          >
+
+            Go Back
+
+          </Text>
+
+        </TouchableOpacity>
+
+      </View>
+
+    );
+
+  }
+
+
+
+  const isAvailable =
+
+    book.availabilityStatus ===
+
+    "available";
+
+
 
   return (
-    <View style={styles.screen}>
-      <ScreenHeader title="Booking Details" />
-      <ScrollView contentContainerStyle={styles.content}>
-        {booking.room?.imageUrl ? (
-          <Image source={{ uri: booking.room.imageUrl }} style={styles.image} />
-        ) : null}
 
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>{booking.room?.name ?? "Room"}</Text>
-          <StatusBadge label={statusLabel} color={statusColor} />
-        </View>
-        {booking.room ? (
-          <Text style={styles.muted}>
-            {ROOM_TYPE_LABEL[booking.room.roomType]}, fits up to {booking.room.capacity} people
+    <View
+
+      style={[
+
+        styles.screen,
+
+        {
+
+          paddingTop:
+
+            insets.top,
+
+        },
+
+      ]}
+
+    >
+
+      <ScrollView
+
+        showsVerticalScrollIndicator={
+
+          false
+
+        }
+
+        contentContainerStyle={
+
+          styles.scrollContent
+
+        }
+
+      >
+
+        <TouchableOpacity
+
+          style={
+
+            styles.backButton
+
+          }
+
+          onPress={() =>
+
+            navigation.goBack()
+
+          }
+
+        >
+
+          <Text
+
+            style={
+
+              styles.backArrow
+
+            }
+
+          >
+
+            ‹
+
           </Text>
-        ) : null}
 
-        <View style={styles.card}>
-          <Detail label="Booking" value={`#${booking.id.slice(0, 8).toUpperCase()}`} />
-          <Detail label="Date" value={formatDisplayDate(booking.bookingDate)} />
-          <Detail label="Time" value={`${booking.startTime} – ${booking.endTime}`} />
-          <Detail label="Participants" value={String(booking.participants)} last />
+        </TouchableOpacity>
+
+
+
+        <View
+
+          style={
+
+            styles.coverSection
+
+          }
+
+        >
+
+          {book.coverUrl ? (
+
+            <Image
+
+              source={{
+
+                uri:
+
+                  book.coverUrl,
+
+              }}
+
+              style={
+
+                styles.cover
+
+              }
+
+              resizeMode="cover"
+
+            />
+
+          ) : (
+
+            <View
+
+              style={
+
+                styles.coverPlaceholder
+
+              }
+
+            >
+
+              <Text
+
+                style={
+
+                  styles.coverPlaceholderText
+
+                }
+
+              >
+
+                No Cover
+
+              </Text>
+
+            </View>
+
+          )}
+
         </View>
 
-        {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-        {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
 
-        {editing ? (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Change booking time</Text>
-            <Text style={styles.muted}>The date stays {formatDisplayDate(booking.bookingDate)}.</Text>
 
-            <TimeSlotPicker
-              date={booking.bookingDate}
-              startTime={editStart}
-              endTime={editEnd}
-              busy={busy}
-              loading={busyLoading}
-              onChange={(s, e) => {
-                setEditStart(s);
-                setEditEnd(e);
-                setEditError(null);
-              }}
-            />
+        <View
 
-            {editError ? <Text style={styles.error}>{editError}</Text> : null}
+          style={
 
-            <View style={{ height: 14 }} />
-            <PrimaryButton
-              label="Save new time"
-              onPress={onSave}
-              loading={saving}
-              disabled={!editStart || !editEnd || unchanged}
-            />
-            <View style={{ height: 8 }} />
-            <PrimaryButton
-              label="Discard changes"
-              variant="outline"
-              onPress={() => {
-                setEditing(false);
-                setEditError(null);
-              }}
-              disabled={saving}
-            />
+            styles.bookInfo
+
+          }
+
+        >
+
+          <Text
+
+            style={
+
+              styles.title
+
+            }
+
+          >
+
+            {book.title}
+
+          </Text>
+
+
+
+          <Text
+
+            style={
+
+              styles.author
+
+            }
+
+          >
+
+            {book.author}
+
+
+
+            {book.edition
+
+              ? `  ${book.edition}`
+
+              : ""}
+
+          </Text>
+
+
+
+          <View
+
+            style={[
+
+              styles.statusBadge,
+
+
+
+              isAvailable
+
+                ? styles.availableBadge
+
+                : styles.borrowedBadge,
+
+            ]}
+
+          >
+
+            <Text
+
+              style={[
+
+                styles.statusText,
+
+
+
+                isAvailable
+
+                  ? styles.availableText
+
+                  : styles.borrowedText,
+
+              ]}
+
+            >
+
+              {isAvailable
+
+                ? "Available"
+
+                : "Borrowed"}
+
+            </Text>
+
           </View>
-        ) : (
-          <>
-            {canEdit ? (
-              <>
-                <PrimaryButton label="Change time" variant="outline" onPress={startEditing} />
-                <View style={{ height: 10 }} />
-              </>
-            ) : null}
-            {isActive && started ? (
-              <Text style={styles.muted}>This booking has already started, so its time can't be changed.</Text>
-            ) : null}
 
-            {isActive ? (
-              confirming ? (
-                <View style={styles.confirmBox}>
-                  <Text style={styles.confirmText}>Cancel this booking? This can't be undone.</Text>
-                  <PrimaryButton label="Yes, cancel booking" variant="danger" onPress={onCancel} loading={cancelling} />
-                  <View style={{ height: 8 }} />
-                  <PrimaryButton
-                    label="Keep booking"
-                    variant="outline"
-                    onPress={() => setConfirming(false)}
-                    disabled={cancelling}
-                  />
-                </View>
-              ) : (
-                <PrimaryButton label="Cancel booking" variant="danger" onPress={() => setConfirming(true)} />
-              )
-            ) : null}
-          </>
+        </View>
+
+
+
+        {book.description && (
+
+          <View
+
+            style={
+
+              styles.descriptionSection
+
+            }
+
+          >
+
+            <Text
+
+              style={
+
+                styles.description
+
+              }
+
+            >
+
+              {
+
+                book.description
+
+              }
+
+            </Text>
+
+          </View>
+
         )}
 
-        <View style={{ height: 10 }} />
-        <PrimaryButton label="Back to Spaces" variant="outline" onPress={() => navigation.navigate("MainTabs")} />
+
+
+        {isAvailable ? (
+
+          <TouchableOpacity
+
+            style={[
+
+              styles.primaryButton,
+
+
+
+              reserving &&
+
+                styles.disabledButton,
+
+            ]}
+
+            disabled={
+
+              reserving
+
+            }
+
+            onPress={
+
+              handleReserve
+
+            }
+
+          >
+
+            {reserving ? (
+
+              <ActivityIndicator
+
+                color={
+
+                  THEME.white
+
+                }
+
+              />
+
+            ) : (
+
+              <Text
+
+                style={
+
+                  styles.primaryButtonText
+
+                }
+
+              >
+
+                Reserve This Book
+
+              </Text>
+
+            )}
+
+          </TouchableOpacity>
+
+        ) : (
+
+          <TouchableOpacity
+
+            style={
+
+              styles.queueButton
+
+            }
+
+            onPress={() =>
+
+              navigation.navigate(
+
+                "QueueConfirmation",
+
+                {
+
+                  bookId:
+
+                    book.id,
+
+                }
+
+              )
+
+            }
+
+          >
+
+            <Text
+
+              style={
+
+                styles.queueButtonText
+
+              }
+
+            >
+
+              Join Queue
+
+            </Text>
+
+          </TouchableOpacity>
+
+        )}
+
       </ScrollView>
+
     </View>
+
   );
+
 }
 
-function Detail({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  return (
-    <View style={[styles.detailRow, last && { borderBottomWidth: 0 }]}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
-}
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.background },
-  content: { padding: 16, paddingBottom: 40 },
-  image: { width: "100%", height: 170, borderRadius: 14, marginBottom: 14 },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  title: { fontSize: 22, fontWeight: "800", color: theme.textPrimary, flexShrink: 1 },
-  muted: { color: theme.textSecondary, marginTop: 4 },
-  card: {
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    marginVertical: 18,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-    gap: 12,
-  },
-  detailLabel: { color: theme.textSecondary },
-  detailValue: { color: theme.textPrimary, fontWeight: "700", flexShrink: 1, textAlign: "right" },
-  notice: { color: theme.success, fontWeight: "700", marginBottom: 12 },
-  error: { color: theme.danger, marginTop: 12, marginBottom: 4 },
-  panel: {
-    borderWidth: 1,
-    borderColor: theme.primary,
-    borderRadius: 14,
-    padding: 14,
-  },
-  panelTitle: { fontSize: 17, fontWeight: "800", color: theme.textPrimary },
-  confirmBox: {
-    borderWidth: 1,
-    borderColor: theme.danger,
-    borderRadius: 12,
-    padding: 14,
-  },
-  confirmText: { color: theme.textPrimary, fontWeight: "600", marginBottom: 12 },
-});
+
+const styles =
+
+  StyleSheet.create({
+
+    screen: {
+
+      flex: 1,
+
+      backgroundColor:
+
+        THEME.white,
+
+    },
+
+
+
+    scrollContent: {
+
+      flexGrow: 1,
+
+      paddingBottom:
+
+        100,
+
+    },
+
+
+
+    center: {
+
+      flex: 1,
+
+
+
+      alignItems:
+
+        "center",
+
+
+
+      justifyContent:
+
+        "center",
+
+
+
+      backgroundColor:
+
+        THEME.white,
+
+
+
+      paddingHorizontal:
+
+        30,
+
+    },
+
+
+
+    loadingText: {
+
+      marginTop:
+
+        12,
+
+
+
+      color:
+
+        THEME.secondary,
+
+    },
+
+
+
+    errorTitle: {
+
+      fontSize: 20,
+
+
+
+      fontWeight:
+
+        "700",
+
+
+
+      marginBottom:
+
+        20,
+
+
+
+      color:
+
+        THEME.text,
+
+    },
+
+
+
+    backButton: {
+
+      width: 45,
+
+      height: 50,
+
+
+
+      marginLeft:
+
+        24,
+
+
+
+      marginTop:
+
+        8,
+
+
+
+      justifyContent:
+
+        "center",
+
+    },
+
+
+
+    backArrow: {
+
+      fontSize: 32,
+
+
+
+      color:
+
+        THEME.blue,
+
+    },
+
+
+
+    coverSection: {
+
+      alignItems:
+
+        "center",
+
+
+
+      marginTop:
+
+        46,
+
+    },
+
+
+
+    cover: {
+
+      width: 168,
+
+      height: 196,
+
+
+
+      borderRadius:
+
+        7,
+
+    },
+
+
+
+    coverPlaceholder: {
+
+      width: 168,
+
+      height: 196,
+
+
+
+      borderRadius:
+
+        7,
+
+
+
+      backgroundColor:
+
+        "#E8F1FC",
+
+
+
+      alignItems:
+
+        "center",
+
+
+
+      justifyContent:
+
+        "center",
+
+    },
+
+
+
+    coverPlaceholderText: {
+
+      color:
+
+        THEME.secondary,
+
+    },
+
+
+
+    bookInfo: {
+
+      alignItems:
+
+        "center",
+
+
+
+      marginTop:
+
+        52,
+
+
+
+      paddingHorizontal:
+
+        24,
+
+    },
+
+
+
+    title: {
+
+      fontSize: 23,
+
+
+
+      fontWeight:
+
+        "800",
+
+
+
+      lineHeight: 28,
+
+
+
+      color:
+
+        THEME.text,
+
+
+
+      textAlign:
+
+        "center",
+
+    },
+
+
+
+    author: {
+
+      marginTop:
+
+        4,
+
+
+
+      fontSize: 12,
+
+
+
+      color:
+
+        THEME.secondary,
+
+
+
+      textAlign:
+
+        "center",
+
+    },
+
+
+
+    statusBadge: {
+
+      marginTop:
+
+        7,
+
+
+
+      paddingHorizontal:
+
+        16,
+
+
+
+      paddingVertical:
+
+        4,
+
+
+
+      borderRadius:
+
+        20,
+
+    },
+
+
+
+    statusText: {
+
+      fontSize: 11,
+
+
+
+      fontWeight:
+
+        "600",
+
+    },
+
+
+
+    availableBadge: {
+
+      backgroundColor:
+
+        THEME.availableBg,
+
+    },
+
+
+
+    availableText: {
+
+      color:
+
+        THEME.availableText,
+
+    },
+
+
+
+    borrowedBadge: {
+
+      backgroundColor:
+
+        THEME.borrowedBg,
+
+    },
+
+
+
+    borrowedText: {
+
+      color:
+
+        THEME.borrowedText,
+
+    },
+
+
+
+    descriptionSection: {
+
+      marginTop:
+
+        24,
+
+
+
+      paddingHorizontal:
+
+        44,
+
+    },
+
+
+
+    description: {
+
+      fontSize: 11,
+
+
+
+      lineHeight: 14,
+
+
+
+      color:
+
+        THEME.text,
+
+    },
+
+
+
+    primaryButton: {
+
+      alignSelf:
+
+        "center",
+
+
+
+      width: 178,
+
+      height: 36,
+
+
+
+      marginTop:
+
+        24,
+
+
+
+      borderRadius:
+
+        7,
+
+
+
+      backgroundColor:
+
+        THEME.orange,
+
+
+
+      alignItems:
+
+        "center",
+
+
+
+      justifyContent:
+
+        "center",
+
+    },
+
+
+
+    primaryButtonText: {
+
+      color:
+
+        THEME.white,
+
+
+
+      fontSize: 11,
+
+
+
+      fontWeight:
+
+        "700",
+
+    },
+
+
+
+    queueButton: {
+
+      alignSelf:
+
+        "center",
+
+
+
+      width: 178,
+
+      height: 36,
+
+
+
+      marginTop:
+
+        24,
+
+
+
+      borderRadius:
+
+        7,
+
+
+
+      backgroundColor:
+
+        THEME.orange,
+
+
+
+      alignItems:
+
+        "center",
+
+
+
+      justifyContent:
+
+        "center",
+
+    },
+
+
+
+    queueButtonText: {
+
+      color:
+
+        THEME.white,
+
+
+
+      fontSize: 11,
+
+
+
+      fontWeight:
+
+        "700",
+
+    },
+
+
+
+    disabledButton: {
+
+      opacity:
+
+        0.6,
+
+    },
+
+  });
