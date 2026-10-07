@@ -11,10 +11,6 @@ import {
 } from "@react-navigation/bottom-tabs";
 
 import {
-  useNavigation,
-} from "@react-navigation/native";
-
-import {
   Ionicons,
 } from "@expo/vector-icons";
 
@@ -41,7 +37,7 @@ import ProfileScreen from "../screens/profile/ProfileScreen";
 // MEMBER 2
 // =========================================================
 
-import PlaceholderScreen from "../screens/PlaceholderScreen";
+import BookCatalogueScreen from "../screens/books/bookCatalogueScreen";;
 
 // =========================================================
 // MEMBER 3
@@ -107,9 +103,6 @@ const getTabIcon = (
 // =========================================================
 
 export default function BottomTabNavigator() {
-  const navigation =
-    useNavigation<RootNavigationProp>();
-
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -239,25 +232,11 @@ export default function BottomTabNavigator() {
 
       <Tab.Screen
         name="Books"
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-
-            navigation.navigate(
-              "BookCatalogue"
-            );
-          },
-        }}
+        component={BookCatalogueScreen}
         options={{
           tabBarLabel: "Books",
         }}
-      >
-        {() => (
-          <PlaceholderScreen
-            title="Books"
-          />
-        )}
-      </Tab.Screen>
+      />
 
       {/* =================================================
           STUDY SPACES - MEMBER 3

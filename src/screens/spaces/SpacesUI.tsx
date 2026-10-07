@@ -14,7 +14,7 @@ export function ScreenHeader({ title }: { title: string }) {
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
       {canGoBack ? (
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.back}>
-          <Text style={styles.backText}>‹ Back</Text>
+          <Text style={styles.backText}>‹</Text>
         </Pressable>
       ) : (
         <View style={styles.back} />

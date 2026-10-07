@@ -1,6 +1,7 @@
-import React, {
+import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -41,41 +42,18 @@ const CATEGORIES = [
 ];
 
 const THEME = {
-  background:
-    "#FFFFFF",
-
-  title:
-    "#1B3F94",
-
-  accent:
-    "#F07A2B",
-
-  chip:
-    "#D9D9D9",
-
-  chipText:
-    "#1A1A1A",
-
-  text:
-    "#111111",
-
-  textSecondary:
-    "#444444",
-
-  border:
-    "#111111",
-
-  availableBg:
-    "#92E67C",
-
-  availableText:
-    "#1E5A12",
-
-  borrowedBg:
-    "#F9B9B9",
-
-  borrowedText:
-    "#B42318",
+  background: "#FFFFFF",
+  title: "#1B3F94",
+  accent: "#F07A2B",
+  chip: "#D9D9D9",
+  chipText: "#1A1A1A",
+  text: "#111111",
+  textSecondary: "#444444",
+  border: "#111111",
+  availableBg: "#92E67C",
+  availableText: "#1E5A12",
+  borrowedBg: "#F9B9B9",
+  borrowedText: "#B42318",
 };
 
 export default function BookCatalogueScreen() {
@@ -97,6 +75,20 @@ export default function BookCatalogueScreen() {
   ] =
     useState("All");
 
+  /*
+   * Keep the latest selected category available
+   * to the realtime callback without recreating
+   * the Supabase subscription every time the
+   * category changes.
+   */
+  const categoryRef =
+    useRef(category);
+
+  useEffect(() => {
+    categoryRef.current =
+      category;
+  }, [category]);
+
   const [
     query,
     setQuery,
@@ -109,22 +101,16 @@ export default function BookCatalogueScreen() {
   ] =
     useState(true);
 
-  /* LOAD BOOKS                                         */
+  /* LOAD BOOKS */
   const loadBooks =
     useCallback(
       async (
-        selectedCategory:
-          string,
-        showLoader =
-          true
+        selectedCategory: string,
+        showLoader = true
       ) => {
         try {
-          if (
-            showLoader
-          ) {
-            setLoading(
-              true
-            );
+          if (showLoader) {
+            setLoading(true);
           }
 
           const data =
@@ -132,34 +118,24 @@ export default function BookCatalogueScreen() {
               selectedCategory
             );
 
-          setBooks(
-            data
-          );
-        } catch (
-          error
-        ) {
+          setBooks(data);
+        } catch (error) {
           console.error(
             "Failed to load catalogue:",
             error
           );
 
-          setBooks(
-            []
-          );
+          setBooks([]);
         } finally {
-          if (
-            showLoader
-          ) {
-            setLoading(
-              false
-            );
+          if (showLoader) {
+            setLoading(false);
           }
         }
       },
       []
     );
 
-  /* LOAD WHEN CATEGORY CHANGES                         */
+  /* LOAD WHEN CATEGORY CHANGES */
   useEffect(
     () => {
       loadBooks(
@@ -172,7 +148,7 @@ export default function BookCatalogueScreen() {
     ]
   );
 
-  /* REFRESH WHEN SCREEN GETS FOCUS                     */
+  /* REFRESH WHEN SCREEN GETS FOCUS */
   useFocusEffect(
     useCallback(
       () => {
@@ -188,33 +164,27 @@ export default function BookCatalogueScreen() {
     )
   );
 
-  /* REALTIME BOOK AVAILABILITY                         */
+  /* REALTIME BOOK AVAILABILITY */
   /*
    * If another user reserves or cancels a book,
    * Supabase sends an UPDATE event from the books table.
    *
-   * Then we refresh the catalogue.
+   * Then we refresh the currently selected catalogue
+   * category.
    *
-   * Example:
-   *
-   * User 1 reserves book
-   *      |
-   * books.availability_status = borrowed
-   *      |
-   * User 2 receives realtime event
-   *      |
-   * Catalogue refreshes
-   *      |
-   * User 2 sees "Borrowed"
+   * Important:
+   * This effect does NOT depend on category.
+   * categoryRef always contains the latest category.
+   * Therefore changing category does not create another
+   * realtime subscription.
    */
-
   useEffect(
     () => {
       const unsubscribe =
         subscribeToBookAvailability(
           () => {
             loadBooks(
-              category,
+              categoryRef.current,
               false
             );
           }
@@ -225,12 +195,11 @@ export default function BookCatalogueScreen() {
       };
     },
     [
-      category,
       loadBooks,
     ]
   );
 
-  /* SEARCH                                             */
+  /* SEARCH */
   const submitSearch =
     () => {
       const value =
@@ -243,13 +212,12 @@ export default function BookCatalogueScreen() {
       navigation.navigate(
         "SearchResults",
         {
-          query:
-            value,
+          query: value,
         }
       );
     };
 
-  /* RENDER BOOK                                        */
+  /* RENDER BOOK */
   const renderBook = ({
     item,
   }: {
@@ -342,7 +310,6 @@ export default function BookCatalogueScreen() {
         <View
           style={[
             styles.statusBadge,
-
             {
               backgroundColor:
                 isAvailable
@@ -354,7 +321,6 @@ export default function BookCatalogueScreen() {
           <Text
             style={[
               styles.statusText,
-
               {
                 color:
                   isAvailable
@@ -372,18 +338,17 @@ export default function BookCatalogueScreen() {
     );
   };
 
-  /* UI                                                 */
+  /* UI */
   return (
     <View
       style={
         styles.screen
       }
     >
-      {/* HEADER                                          */}
+      {/* HEADER */}
       <View
         style={[
           styles.header,
-
           {
             paddingTop:
               insets.top +
@@ -392,7 +357,6 @@ export default function BookCatalogueScreen() {
         ]}
       >
         {/* Title */}
-
         <Text
           style={
             styles.title
@@ -402,7 +366,6 @@ export default function BookCatalogueScreen() {
         </Text>
 
         {/* Search */}
-
         <View
           style={
             styles.searchBar
@@ -449,15 +412,12 @@ export default function BookCatalogueScreen() {
         </View>
 
         {/* Categories */}
-
         <FlatList
           horizontal
           data={
             CATEGORIES
           }
-          keyExtractor={(
-            item
-          ) =>
+          keyExtractor={(item) =>
             item
           }
           showsHorizontalScrollIndicator={
@@ -485,7 +445,6 @@ export default function BookCatalogueScreen() {
                 }
                 style={[
                   styles.chip,
-
                   isActive &&
                     styles.chipActive,
                 ]}
@@ -493,7 +452,6 @@ export default function BookCatalogueScreen() {
                 <Text
                   style={[
                     styles.chipText,
-
                     isActive &&
                       styles.chipTextActive,
                   ]}
@@ -506,7 +464,7 @@ export default function BookCatalogueScreen() {
         />
       </View>
 
-      {/* LOADING                                         */}
+      {/* LOADING */}
       {loading ? (
         <View
           style={
@@ -530,7 +488,7 @@ export default function BookCatalogueScreen() {
         </View>
       ) : books.length ===
         0 ? (
-        /* EMPTY                                         */
+        /* EMPTY */
         <View
           style={
             styles.emptyContainer
@@ -554,14 +512,12 @@ export default function BookCatalogueScreen() {
           </Text>
         </View>
       ) : (
-        /* BOOK LIST                                     */
+        /* BOOK LIST */
         <FlatList
           data={
             books
           }
-          keyExtractor={(
-            item
-          ) =>
+          keyExtractor={(item) =>
             item.id
           }
           numColumns={
@@ -585,7 +541,7 @@ export default function BookCatalogueScreen() {
   );
 }
 
-/* STYLES                                             */
+/* STYLES */
 const styles =
   StyleSheet.create({
     screen: {
@@ -595,7 +551,7 @@ const styles =
         THEME.background,
     },
 
-    /* HEADER                                             */
+    /* HEADER */
     header: {
       paddingHorizontal:
         20,
@@ -621,7 +577,7 @@ const styles =
         12,
     },
 
-    /* SEARCH                                             */
+    /* SEARCH */
     searchBar: {
       height:
         52,
@@ -723,7 +679,7 @@ const styles =
         THEME.text,
     },
 
-    /* CATEGORY                                           */
+    /* CATEGORY */
     categoryList: {
       gap:
         10,
@@ -770,7 +726,7 @@ const styles =
         "#FFFFFF",
     },
 
-    /* LOADING                                            */
+    /* LOADING */
     loadingContainer: {
       flex:
         1,
@@ -793,7 +749,7 @@ const styles =
         THEME.textSecondary,
     },
 
-    /* EMPTY                                              */
+    /* EMPTY */
     emptyContainer: {
       flex:
         1,
@@ -833,7 +789,7 @@ const styles =
         "center",
     },
 
-    /* BOOK LIST                                          */
+    /* BOOK LIST */
     bookList: {
       paddingHorizontal:
         20,
@@ -945,7 +901,7 @@ const styles =
         2,
     },
 
-    /* STATUS                                             */
+    /* STATUS */
     statusBadge: {
       marginTop:
         8,

@@ -757,9 +757,7 @@ export default function QueueConfirmationScreen() {
             0.85
           }
           onPress={() =>
-            navigation.navigate(
-              "MyReservations"
-            )
+            navigation.navigate("MyBookReservations")
           }
         >
           <Text
