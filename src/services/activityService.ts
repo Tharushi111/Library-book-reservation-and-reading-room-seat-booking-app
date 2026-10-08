@@ -42,496 +42,532 @@ export interface BorrowedBookItem {
   isMock?: boolean;
 }
 
-// Fallback demo data when database is empty or user is not logged in
-const FALLBACK_RESERVATIONS: ReservationItem[] = [
-  {
-    id: "RES-10245",
-    bookId: "BK1024",
-    title: "Database Systems",
-    status: "Reserved",
-    dateLabel: "Collect By",
-    date: "12 Sep 2026",
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
-    reservedAt: "10 Sep 2026",
-    collectionDeadline: "12 Sep 2026",
-    isMock: true,
-  },
-  {
-    id: "RES-20874",
-    bookId: "BK2087",
-    title: "Software Engineering",
-    status: "Ready for Collection",
-    dateLabel: "Collect By",
-    date: "14 Sep 2026",
-    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
-    reservedAt: "11 Sep 2026",
-    collectionDeadline: "14 Sep 2026",
-    isMock: true,
-  },
-  {
-    id: "RES-35678",
-    bookId: "BK3567",
-    title: "Web Technologies",
-    status: "Reserved",
-    dateLabel: "Collect By",
-    date: "16 Sep 2026",
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=300",
-    reservedAt: "12 Sep 2026",
-    collectionDeadline: "16 Sep 2026",
-    isMock: true,
-  },
-  {
-    id: "RES-11311",
-    bookId: "BK1131",
-    title: "Data Structures",
-    status: "Collected",
-    dateLabel: "Collected on",
-    date: "02 Sep 2026",
-    image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=300",
-    isMock: true,
-  },
-  {
-    id: "RES-33314",
-    bookId: "BK3331",
-    title: "Human Computer Interaction",
-    status: "Cancelled",
-    dateLabel: "Cancelled on",
-    date: "28 Aug 2026",
-    image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=300",
-    isMock: true,
-  },
-];
+const DEFAULT_BOOK_IMAGE =
+  "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300";
 
-const FALLBACK_ROOM_BOOKINGS: RoomBookingItem[] = [
-  {
-    id: "BKG-001",
-    room: "Study Room A",
-    floor: "Floor 2",
-    seat: "A-12",
-    date: "13 Sep 2026",
-    time: "10:00 AM - 12:00 PM",
-    status: "Confirmed",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300",
-    isMock: true,
-  },
-  {
-    id: "BKG-002",
-    room: "Study Room B",
-    floor: "Floor 2",
-    seat: "B-04",
-    date: "14 Sep 2026",
-    time: "01:00 PM - 03:00 PM",
-    status: "Confirmed",
-    image: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=300",
-    isMock: true,
-  },
-];
+const DEFAULT_ROOM_IMAGE =
+  "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300";
 
-const FALLBACK_BORROWED_BOOKS: BorrowedBookItem[] = [
-  {
-    id: "BRW-01",
-    title: "Database Systems",
-    dueIn: "Due in 3 days",
-    dueDate: "15 Sep 2026",
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
-    status: "borrowed",
-    isMock: true,
-  },
-  {
-    id: "BRW-02",
-    title: "Web Technologies",
-    dueIn: "Due in 7 days",
-    dueDate: "20 Sep 2026",
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=300",
-    status: "borrowed",
-    isMock: true,
-  },
-  {
-    id: "BRW-03",
-    title: "Web Development",
-    dueIn: "Due in 15 days",
-    dueDate: "28 Sep 2026",
-    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=300",
-    status: "borrowed",
-    isMock: true,
-  },
-  {
-    id: "BRW-04",
-    title: "Clean Code",
-    dueIn: "Due in 20 days",
-    dueDate: "05 Oct 2026",
-    image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=300",
-    status: "borrowed",
-    isMock: true,
-  },
-];
-
-/**
- * Helper to format date strings
- */
-function formatDate(dateStr?: string): string {
+function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "N/A";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-GB", {
+
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return dateStr;
+
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
-/**
- * Helper to calculate due days
- */
-function calculateDueIn(dueDateStr: string): string {
+function formatTime(time?: string | null): string {
+  if (!time) return "N/A";
+
+  const parts = time.split(":");
+  if (parts.length < 2) return time;
+
+  const hour24 = Number(parts[0]);
+  const minute = parts[1];
+
+  if (Number.isNaN(hour24)) return time;
+
+  const suffix = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+
+  return `${hour12}:${minute} ${suffix}`;
+}
+
+function calculateDueIn(dueDateStr?: string | null): string {
+  if (!dueDateStr) return "Due date unavailable";
+
   const due = new Date(dueDateStr);
+  if (Number.isNaN(due.getTime())) return "Due date unavailable";
+
   const now = new Date();
   const diffTime = due.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
   if (diffDays < 0) {
-    return `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"}`;
-  } else if (diffDays === 0) {
-    return "Due today";
-  } else {
-    return `Due in ${diffDays} day${diffDays === 1 ? "" : "s"}`;
+    const days = Math.abs(diffDays);
+    return `Overdue by ${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  if (diffDays === 0) return "Due today";
+
+  return `Due in ${diffDays} day${diffDays === 1 ? "" : "s"}`;
+}
+
+function reservationStatus(status?: string | null): string {
+  switch ((status || "").toLowerCase()) {
+    case "reserved":
+      return "Reserved";
+    case "ready_for_collection":
+    case "ready for collection":
+      return "Ready for Collection";
+    case "collected":
+      return "Collected";
+    case "cancelled":
+      return "Cancelled";
+    case "expired":
+      return "Expired";
+    case "returned":
+      return "Returned";
+    default:
+      return status || "Reserved";
   }
 }
 
+function bookingStatus(status?: string | null): string {
+  switch ((status || "").toLowerCase()) {
+    case "active":
+    case "confirmed":
+      return "Confirmed";
+    case "completed":
+      return "Completed";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return status || "Confirmed";
+  }
+}
+
+async function getSignedInUserId(): Promise<string | null> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    console.warn("Unable to read current user:", error.message);
+    return null;
+  }
+
+  return user?.id ?? null;
+}
+
 /**
- * Fetch Book Reservations for current user (READ)
+ * READ: Return only the currently logged-in user's book reservations.
+ * There is intentionally NO demo/fallback data here.
  */
 export async function getUserReservations(): Promise<ReservationItem[]> {
   try {
-        await expireOverdueReservations();
+    const userId = await getSignedInUserId();
+    if (!userId) return [];
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    let query = supabase
-      .from("book_reservations")
-      .select("*, books(*)")
-      .order("created_at", { ascending: false });
-
-    if (user?.id) {
-      query = query.eq("user_id", user.id);
+    try {
+      await expireOverdueReservations();
+    } catch (expiryError) {
+      console.warn("Could not expire overdue reservations:", expiryError);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from("book_reservations")
+      .select("*, books(*)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.warn("Supabase query error for book_reservations:", error.message);
-      return FALLBACK_RESERVATIONS;
+      return [];
     }
 
-    if (!data || data.length === 0) {
-      return FALLBACK_RESERVATIONS;
-    }
+    if (!data || data.length === 0) return [];
 
     return data.map((item: any) => {
       const book = item.books || {};
-      const statusCapitalized =
-        item.status === "reserved"
-          ? "Reserved"
-          : item.status === "collected"
-          ? "Collected"
-          : item.status === "cancelled"
-          ? "Cancelled"
-          : item.status === "expired"
-          ? "Expired"
-          : item.status || "Reserved";
+      const status = reservationStatus(item.status);
+
+      let dateLabel = "Collect By";
+      if (status === "Collected") dateLabel = "Collected";
+      if (status === "Cancelled") dateLabel = "Cancelled";
+      if (status === "Expired") dateLabel = "Expired";
+      if (status === "Returned") dateLabel = "Returned";
 
       return {
         id: item.id,
-        bookId: item.book_id || book.id || "N/A",
+        bookId: item.book_id || book.id || "",
         title: book.title || "Untitled Book",
-        status: statusCapitalized,
-        dateLabel: "Collect By",
-        date: formatDate(item.collection_deadline || item.reserved_at),
-        image:
-          book.cover_url ||
-          "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
-        reservedAt: formatDate(item.reserved_at),
+        status,
+        dateLabel,
+        date: formatDate(item.collection_deadline || item.reserved_at || item.created_at),
+        image: book.cover_url || DEFAULT_BOOK_IMAGE,
+        reservedAt: formatDate(item.reserved_at || item.created_at),
         collectionDeadline: formatDate(item.collection_deadline),
         isMock: false,
       };
     });
-  } catch (err) {
-    console.warn("Error fetching reservations:", err);
-    return FALLBACK_RESERVATIONS;
+  } catch (error) {
+    console.warn("Error fetching reservations:", error);
+    return [];
   }
 }
 
 /**
- * Cancel a Book Reservation (UPDATE)
+ * UPDATE: Cancel one reservation belonging to the current user.
  */
-export async function cancelReservation(reservationId: string): Promise<{ success: boolean; message: string }> {
+export async function cancelReservation(
+  reservationId: string
+): Promise<{ success: boolean; message: string }> {
   try {
-    // If it's a mock reservation
-    if (reservationId.startsWith("RES-")) {
-      // Find in fallback and update
-      const target = FALLBACK_RESERVATIONS.find((r) => r.id === reservationId);
-      if (target) {
-        target.status = "Cancelled";
-      }
-      return { success: true, message: "Reservation cancelled successfully" };
+    const userId = await getSignedInUserId();
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Please sign in again before cancelling a reservation.",
+      };
     }
 
+    // bookService.cancelReservation already protects the operation by user_id
+    // and updates the global book availability correctly.
     await cancelBookReservation(reservationId);
 
-    return { success: true, message: "Reservation cancelled successfully" };
-  } catch (err: any) {
-    console.error("Error cancelling reservation:", err);
+    return {
+      success: true,
+      message: "Reservation cancelled successfully",
+    };
+  } catch (error: any) {
+    console.error("Error cancelling reservation:", error);
+
     return {
       success: false,
-      message: err.message || "Failed to cancel reservation",
+      message: error?.message || "Failed to cancel reservation",
     };
   }
 }
 
 /**
- * Fetch Room Bookings for current user (READ)
+ * READ: Return only the currently logged-in user's room bookings.
+ * There is intentionally NO demo/fallback data here.
  */
 export async function getUserRoomBookings(): Promise<RoomBookingItem[]> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = await getSignedInUserId();
+    if (!userId) return [];
 
-    let query = supabase
+    const { data, error } = await supabase
       .from("room_bookings")
       .select("*, rooms(*)")
+      .eq("user_id", userId)
       .order("booking_date", { ascending: false });
-
-    if (user?.id) {
-      query = query.eq("user_id", user.id);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.warn("Supabase query error for room_bookings:", error.message);
-      return FALLBACK_ROOM_BOOKINGS;
+      return [];
     }
 
-    if (!data || data.length === 0) {
-      return FALLBACK_ROOM_BOOKINGS;
-    }
+    if (!data || data.length === 0) return [];
 
     return data.map((item: any) => {
       const room = item.rooms || {};
-      const statusText =
-        item.status === "active"
-          ? "Confirmed"
-          : item.status === "completed"
-          ? "Completed"
-          : item.status === "cancelled"
-          ? "Cancelled"
-          : item.status || "Confirmed";
 
       return {
         id: item.id,
         roomId: item.room_id,
         room: room.name || "Study Room",
-        floor: room.room_type ? room.room_type.replace("_", " ").toUpperCase() : "Study Space",
+        floor: room.room_type
+          ? String(room.room_type).replace(/_/g, " ").toUpperCase()
+          : "Study Space",
         seat: `Capacity: ${room.capacity || item.participants || 4}`,
         date: formatDate(item.booking_date),
-        time: `${item.start_time || "10:00 AM"} - ${item.end_time || "12:00 PM"}`,
-        status: statusText,
-        image:
-          room.image_url ||
-          "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300",
+        time: `${formatTime(item.start_time)} - ${formatTime(item.end_time)}`,
+        status: bookingStatus(item.status),
+        image: room.image_url || DEFAULT_ROOM_IMAGE,
         participants: item.participants,
         isMock: false,
       };
     });
-  } catch (err) {
-    console.warn("Error fetching room bookings:", err);
-    return FALLBACK_ROOM_BOOKINGS;
+  } catch (error) {
+    console.warn("Error fetching room bookings:", error);
+    return [];
   }
 }
 
 /**
- * Cancel a Room Booking (UPDATE)
+ * UPDATE: Cancel one room booking belonging to the current user.
  */
-export async function cancelRoomBooking(bookingId: string): Promise<{ success: boolean; message: string }> {
+export async function cancelRoomBooking(
+  bookingId: string
+): Promise<{ success: boolean; message: string }> {
   try {
-    if (bookingId.startsWith("BKG-")) {
-      const target = FALLBACK_ROOM_BOOKINGS.find((b) => b.id === bookingId);
-      if (target) {
-        target.status = "Cancelled";
-      }
-      return { success: true, message: "Booking cancelled successfully" };
+    const userId = await getSignedInUserId();
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Please sign in again before cancelling a booking.",
+      };
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("room_bookings")
       .update({ status: "cancelled" })
-      .eq("id", bookingId);
+      .eq("id", bookingId)
+      .eq("user_id", userId)
+      .select("id")
+      .maybeSingle();
 
-    if (error) {
-      throw error;
+    if (error) throw error;
+
+    if (!data) {
+      return {
+        success: false,
+        message: "Booking not found or it does not belong to this account.",
+      };
     }
 
-    return { success: true, message: "Booking cancelled successfully" };
-  } catch (err: any) {
-    console.error("Error cancelling room booking:", err);
+    return {
+      success: true,
+      message: "Booking cancelled successfully",
+    };
+  } catch (error: any) {
+    console.error("Error cancelling room booking:", error);
+
     return {
       success: false,
-      message: err.message || "Failed to cancel booking",
+      message: error?.message || "Failed to cancel booking",
     };
   }
 }
 
 /**
- * Fetch Borrowed Books for current user (READ)
+ * READ: Return only active borrowed/overdue books for the current user.
+ * There is intentionally NO demo/fallback data here.
  */
 export async function getUserBorrowedBooks(): Promise<BorrowedBookItem[]> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const userId = await getSignedInUserId();
+    if (!userId) return [];
 
-    let query = supabase
+    const { data, error } = await supabase
       .from("borrowed_books")
       .select("*, books(*)")
+      .eq("user_id", userId)
+      .in("status", ["borrowed", "overdue"])
       .order("due_date", { ascending: true });
-
-    if (user?.id) {
-      query = query.eq("user_id", user.id);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.warn("Supabase query error for borrowed_books:", error.message);
-      return FALLBACK_BORROWED_BOOKS;
+      return [];
     }
 
-    if (!data || data.length === 0) {
-      return FALLBACK_BORROWED_BOOKS;
-    }
+    if (!data || data.length === 0) return [];
 
     return data.map((item: any) => {
       const book = item.books || {};
+
       return {
         id: item.id,
         bookId: item.book_id,
         title: book.title || "Untitled Book",
         dueIn: calculateDueIn(item.due_date),
         dueDate: formatDate(item.due_date),
-        image:
-          book.cover_url ||
-          "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
+        image: book.cover_url || DEFAULT_BOOK_IMAGE,
         status: item.status || "borrowed",
         isMock: false,
       };
     });
-  } catch (err) {
-    console.warn("Error fetching borrowed books:", err);
-    return FALLBACK_BORROWED_BOOKS;
+  } catch (error) {
+    console.warn("Error fetching borrowed books:", error);
+    return [];
   }
 }
 
 /**
- * Fetch Single Reservation Details (READ)
+ * READ: Return one reservation only if it belongs to the current user.
  */
-export async function getReservationDetails(reservationId: string): Promise<ReservationItem | null> {
+export async function getReservationDetails(
+  reservationId: string
+): Promise<ReservationItem | null> {
   try {
-    if (reservationId.startsWith("RES-")) {
-      const fallback = FALLBACK_RESERVATIONS.find((r) => r.id === reservationId);
-      return fallback || null;
-    }
+    const userId = await getSignedInUserId();
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from("book_reservations")
       .select("*, books(*)")
       .eq("id", reservationId)
-      .single();
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
+      console.warn("Error fetching reservation details:", error.message);
       return null;
     }
 
+    if (!data) return null;
+
     const book = data.books || {};
-    const statusCapitalized =
-      data.status === "reserved"
-        ? "Reserved"
-        : data.status === "collected"
-        ? "Collected"
-        : data.status === "cancelled"
-        ? "Cancelled"
-        : data.status === "expired"
-        ? "Expired"
-        : data.status || "Reserved";
+    const status = reservationStatus(data.status);
+
+    let dateLabel = "Collect By";
+    if (status === "Collected") dateLabel = "Collected";
+    if (status === "Cancelled") dateLabel = "Cancelled";
+    if (status === "Expired") dateLabel = "Expired";
+    if (status === "Returned") dateLabel = "Returned";
 
     return {
       id: data.id,
-      bookId: data.book_id || book.id || "N/A",
+      bookId: data.book_id || book.id || "",
       title: book.title || "Untitled Book",
-      status: statusCapitalized,
-      dateLabel: "Collect By",
-      date: formatDate(data.collection_deadline || data.reserved_at),
-      image:
-        book.cover_url ||
-        "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
-      reservedAt: formatDate(data.reserved_at),
+      status,
+      dateLabel,
+      date: formatDate(data.collection_deadline || data.reserved_at || data.created_at),
+      image: book.cover_url || DEFAULT_BOOK_IMAGE,
+      reservedAt: formatDate(data.reserved_at || data.created_at),
       collectionDeadline: formatDate(data.collection_deadline),
       isMock: false,
     };
-  } catch (err) {
-    console.warn("Error fetching reservation details:", err);
+  } catch (error) {
+    console.warn("Error fetching reservation details:", error);
     return null;
   }
 }
 
 /**
- * Fetch Single Booking Details (READ)
+ * READ: Return one room booking only if it belongs to the current user.
  */
-export async function getBookingDetails(bookingId: string): Promise<RoomBookingItem | null> {
+export async function getBookingDetails(
+  bookingId: string
+): Promise<RoomBookingItem | null> {
   try {
-    if (bookingId.startsWith("BKG-")) {
-      const fallback = FALLBACK_ROOM_BOOKINGS.find((b) => b.id === bookingId);
-      return fallback || null;
-    }
+    const userId = await getSignedInUserId();
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from("room_bookings")
       .select("*, rooms(*)")
       .eq("id", bookingId)
-      .single();
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
+      console.warn("Error fetching booking details:", error.message);
       return null;
     }
 
+    if (!data) return null;
+
     const room = data.rooms || {};
-    const statusText =
-      data.status === "active"
-        ? "Confirmed"
-        : data.status === "completed"
-        ? "Completed"
-        : data.status === "cancelled"
-        ? "Cancelled"
-        : data.status || "Confirmed";
 
     return {
       id: data.id,
       roomId: data.room_id,
       room: room.name || "Study Room",
-      floor: room.room_type ? room.room_type.replace("_", " ").toUpperCase() : "Study Space",
+      floor: room.room_type
+        ? String(room.room_type).replace(/_/g, " ").toUpperCase()
+        : "Study Space",
       seat: `Capacity: ${room.capacity || data.participants || 4}`,
       date: formatDate(data.booking_date),
-      time: `${data.start_time || "10:00 AM"} - ${data.end_time || "12:00 PM"}`,
-      status: statusText,
-      image:
-        room.image_url ||
-        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300",
+      time: `${formatTime(data.start_time)} - ${formatTime(data.end_time)}`,
+      status: bookingStatus(data.status),
+      image: room.image_url || DEFAULT_ROOM_IMAGE,
       participants: data.participants,
       isMock: false,
     };
-  } catch (err) {
-    console.warn("Error fetching booking details:", err);
+  } catch (error) {
+    console.warn("Error fetching booking details:", error);
     return null;
   }
+}
+
+/**
+ * READ: Show active waiting-list entries for the signed-in student.
+ * The database trigger is responsible for maintaining queue_position.
+ */
+export interface WaitingListItem {
+  id: string;
+  bookId: string;
+  title: string;
+  image: string;
+  status: "waiting" | "notified";
+  queuePosition: number | null;
+  joinedDate: string;
+  notifyEnabled: boolean;
+}
+
+export async function getUserWaitingList(): Promise<WaitingListItem[]> {
+  const userId = await getSignedInUserId();
+  if (!userId) throw new Error("Please sign in to view your waiting list.");
+
+  const { data, error } = await supabase
+    .from("book_queue")
+    .select(
+      "id, book_id, queue_position, joined_at, status, notify_enabled, books(title, cover_url)"
+    )
+    .eq("user_id", userId)
+    .in("status", ["waiting", "notified"])
+    .order("joined_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: any) => {
+    const book = Array.isArray(row.books) ? row.books[0] : row.books;
+    return {
+      id: row.id,
+      bookId: row.book_id,
+      title: book?.title || "Untitled Book",
+      image: book?.cover_url || DEFAULT_BOOK_IMAGE,
+      status: row.status === "notified" ? "notified" : "waiting",
+      queuePosition:
+        typeof row.queue_position === "number" && row.queue_position > 0
+          ? row.queue_position
+          : null,
+      joinedDate: formatDate(row.joined_at),
+      notifyEnabled: row.notify_enabled === true,
+    };
+  });
+}
+
+/**
+ * DELETE: Leave only the signed-in user's own active queue entry.
+ * Supabase RLS and the database queue-position trigger handle authorization
+ * and renumbering, respectively.
+ */
+export async function leaveUserWaitingList(queueEntryId: string): Promise<void> {
+  const userId = await getSignedInUserId();
+  if (!userId) throw new Error("Please sign in to leave the waiting list.");
+
+  const { data, error } = await supabase
+    .from("book_queue")
+    .delete()
+    .eq("id", queueEntryId)
+    .eq("user_id", userId)
+    .in("status", ["waiting", "notified"])
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Queue entry not found or already removed.");
+}
+
+/**
+ * Listen for updates to this user's queue entries, including renumbering
+ * caused by another student leaving the same book's queue.
+ * Requires book_queue to be enabled in the Supabase Realtime publication.
+ */
+export async function subscribeToMyWaitingList(
+  onChange: () => void
+): Promise<() => void> {
+  const userId = await getSignedInUserId();
+  if (!userId) return () => {};
+
+  const channel = supabase
+    .channel(`my-waiting-list-${userId}-${Math.random().toString(36).slice(2)}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "book_queue",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => onChange()
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
