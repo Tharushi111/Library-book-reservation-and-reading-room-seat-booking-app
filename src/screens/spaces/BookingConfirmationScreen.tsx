@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -17,7 +18,6 @@ export default function BookingConfirmationScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Route>();
   const bookingId = params?.bookingId;
-
   const [booking, setBooking] = useState<RoomBooking | null>(null);
   const [loading, setLoading] = useState(!!bookingId);
   const [error, setError] = useState<string | null>(null);
@@ -35,17 +35,16 @@ export default function BookingConfirmationScreen() {
     }
   }, [bookingId]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   if (!bookingId) {
     return (
       <View style={styles.screen}>
         <ScreenHeader title="Booking Confirmation" />
         <View style={styles.centerBox}>
+          <Ionicons name="calendar-outline" size={38} color={theme.primary} />
           <Text style={styles.muted}>There is no booking to show yet.</Text>
-          <PrimaryButton label="Back to Spaces" onPress={() => navigation.navigate("MainTabs")} />
+          <View style={{ width: "100%", marginTop: 10 }}><PrimaryButton label="Back to Spaces" onPress={() => navigation.navigate("MainTabs")} /></View>
         </View>
       </View>
     );
@@ -56,74 +55,66 @@ export default function BookingConfirmationScreen() {
   return (
     <View style={styles.screen}>
       <ScreenHeader title="Booking Confirmation" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.tick}>
-          <Text style={styles.tickText}>✓</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.successArt}>
+          <View style={styles.halo}><View style={styles.tick}><Ionicons name="checkmark" size={37} color={theme.white} /></View></View>
         </View>
-        <Text style={styles.title}>Your room is booked</Text>
-        <Text style={styles.muted}>Booking #{booking.id.slice(0, 8).toUpperCase()}</Text>
+        <Text style={styles.title}>Room booked successfully!</Text>
+        <Text style={styles.muted}>Your study space is reserved. Here are your booking details.</Text>
+        <View style={styles.reference}><Ionicons name="receipt-outline" size={15} color={theme.primary} /><Text style={styles.referenceText}>Booking #{booking.id.slice(0, 8).toUpperCase()}</Text></View>
 
         <View style={styles.card}>
-          <Detail label="Room" value={booking.room?.name ?? "Room"} />
-          <Detail label="Date" value={formatDisplayDate(booking.bookingDate)} />
-          <Detail label="Time" value={`${booking.startTime} – ${booking.endTime}`} />
-          <Detail label="Participants" value={String(booking.participants)} />
-          <Detail label="Status" value="Active" last />
+          <View style={styles.cardHeader}><View style={styles.cardHeaderIcon}><Ionicons name="calendar-outline" size={21} color={theme.primary} /></View><Text style={styles.cardHeaderTitle}>Reservation details</Text><View style={styles.activeBadge}><View style={styles.activeDot} /><Text style={styles.activeText}>Active</Text></View></View>
+          <View style={styles.divider} />
+          <Detail icon="business-outline" label="Room" value={booking.room?.name ?? "Room"} />
+          <Detail icon="calendar-outline" label="Date" value={formatDisplayDate(booking.bookingDate)} />
+          <Detail icon="time-outline" label="Time" value={`${booking.startTime} – ${booking.endTime}`} />
+          <Detail icon="people-outline" label="Participants" value={String(booking.participants)} last />
         </View>
 
-        <PrimaryButton
-          label="View booking details"
-          onPress={() => navigation.navigate("BookingDetails", { bookingId: booking.id })}
-        />
-        <View style={{ height: 10 }} />
-        <PrimaryButton label="Back to Spaces" variant="outline" onPress={() => navigation.navigate("MainTabs")} />
+        <View style={styles.infoBox}><Ionicons name="information-circle-outline" size={19} color={theme.primary} /><Text style={styles.infoText}>You can view your booking details anytime from My Seat Bookings.</Text></View>
+        <View style={styles.buttons}>
+          <PrimaryButton label="Back to Spaces" variant="outline" onPress={() => navigation.navigate("MainTabs")} />
+        </View>
       </ScrollView>
     </View>
   );
 }
 
-function Detail({ label, value, last }: { label: string; value: string; last?: boolean }) {
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+function Detail({ icon, label, value, last }: { icon: IconName; label: string; value: string; last?: boolean }) {
   return (
     <View style={[styles.detailRow, last && { borderBottomWidth: 0 }]}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+      <View style={styles.detailIcon}><Ionicons name={icon} size={17} color={theme.primary} /></View>
+      <View style={{ flex: 1 }}><Text style={styles.detailLabel}>{label}</Text><Text style={styles.detailValue}>{value}</Text></View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.background },
-  content: { padding: 20, alignItems: "stretch" },
-  centerBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 24 },
-  tick: {
-    alignSelf: "center",
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: theme.success,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-  tickText: { color: "#FFFFFF", fontSize: 34, fontWeight: "800" },
-  title: { fontSize: 22, fontWeight: "800", color: theme.textPrimary, textAlign: "center", marginTop: 14 },
-  muted: { color: theme.textSecondary, textAlign: "center", marginTop: 4 },
-  card: {
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    marginVertical: 22,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-    gap: 12,
-  },
-  detailLabel: { color: theme.textSecondary },
-  detailValue: { color: theme.textPrimary, fontWeight: "700", flexShrink: 1, textAlign: "right" },
+  content: { paddingHorizontal: 19, paddingTop: 22, paddingBottom: 48, alignItems: "stretch" },
+  centerBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 15, padding: 25 },
+  successArt: { alignItems: "center", marginTop: 5 },
+  halo: { width: 100, height: 100, borderRadius: 50, backgroundColor: theme.paleGreen, alignItems: "center", justifyContent: "center" },
+  tick: { width: 69, height: 69, borderRadius: 35, backgroundColor: theme.success, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 23, fontWeight: "800", color: theme.navy, textAlign: "center", marginTop: 19, letterSpacing: -0.4 },
+  muted: { color: theme.textSecondary, textAlign: "center", marginTop: 8, fontSize: 12, lineHeight: 19 },
+  reference: { alignSelf: "center", marginTop: 17, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: theme.paleBlue, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9 },
+  referenceText: { color: theme.primary, fontSize: 11, fontWeight: "800" },
+  card: { backgroundColor: theme.white, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 16, marginTop: 27 },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 9 },
+  cardHeaderIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: theme.paleBlue, alignItems: "center", justifyContent: "center" },
+  cardHeaderTitle: { color: theme.navy, fontSize: 14, fontWeight: "800", flex: 1 },
+  activeBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: theme.paleGreen, paddingHorizontal: 9, paddingVertical: 7, borderRadius: 16 },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.success },
+  activeText: { color: theme.success, fontSize: 10, fontWeight: "800" },
+  divider: { height: 1, backgroundColor: theme.border, marginTop: 14, marginBottom: 2 },
+  detailRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.border },
+  detailIcon: { width: 35, height: 35, borderRadius: 10, backgroundColor: theme.paleBlue, alignItems: "center", justifyContent: "center" },
+  detailLabel: { color: theme.textSecondary, fontSize: 11 },
+  detailValue: { color: theme.navy, fontWeight: "800", fontSize: 13, marginTop: 4 },
+  infoBox: { flexDirection: "row", alignItems: "flex-start", gap: 9, backgroundColor: theme.paleBlue, borderRadius: 12, padding: 13, marginTop: 19 },
+  infoText: { flex: 1, color: theme.textSecondary, fontSize: 11, lineHeight: 17 },
+  buttons: { gap: 11, marginTop: 24 },
 });
