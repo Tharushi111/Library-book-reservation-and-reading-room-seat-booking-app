@@ -8,24 +8,6 @@ A mobile application designed to make SLIIT Library services easier to access. S
 
 The project translates the team's user research and high-fidelity UI/UX prototype into a working cross-platform mobile application.
 
-## Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [User roles and booking rules](#user-roles-and-booking-rules)
-- [Technology stack](#technology-stack)
-- [Project structure](#project-structure)
-- [Getting started](#getting-started)
-- [Environment variables](#environment-variables)
-- [Database and storage](#database-and-storage)
-- [How to use](#how-to-use)
-- [Quality checks and testing](#quality-checks-and-testing)
-- [Troubleshooting](#troubleshooting)
-- [Git workflow](#git-workflow)
-- [Project team](#project-team)
-- [Security and privacy](#security-and-privacy)
-- [Future improvements](#future-improvements)
-- [Academic context](#academic-context)
 
 ## Overview
 
@@ -320,9 +302,6 @@ Also test the main user flows on a real device or emulator with the shared Supab
 
 > These are **test scenarios, not claims that every test has passed**. Record actual results, screenshots, and defects in the team's test documentation.
 
-### HCI evaluation
-
-For Milestone 03, the assignment requires usability testing with **at least five real or proxy participants**. Test representative tasks, such as searching for a book, joining a queue, and booking a room. Record task completion, issues encountered, participant feedback, and subsequent improvements. The final report should link requirements, prototype screens, implemented features, and functional test cases.
 
 ## Troubleshooting
 
@@ -398,12 +377,3 @@ Potential enhancements beyond the current assignment scope:
 - Personalized book discovery.
 - Additional usability testing and iterative design refinements.
 
-## Academic context
-
-This project was created for **IT3060 Human Computer Interaction**, Milestone 03, at SLIIT. It builds on requirements and user research from Milestone 01 and the low-/high-fidelity prototypes from Milestone 02. The assignment emphasizes a working app, implementation fidelity, CRUD operations, functional testing, usability evaluation, and a consolidated final report.
-
-**Repository:** https://github.com/Tharushi111/Library-book-reservation-and-reading-room-seat-booking-app
-
----
-
-*Developed as a student academic project by Group WE_49.*
