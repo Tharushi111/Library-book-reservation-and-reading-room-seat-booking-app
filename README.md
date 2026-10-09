@@ -52,8 +52,6 @@ Traditional library processes can require users to check availability and manage
 - View borrowed-book information, where available.
 - Access notifications and recent searches through the app's account/activity flows.
 
-> **Implementation note:** This README describes the project's planned and implemented feature areas. Availability of individual actions may depend on the latest merged branch, Supabase policies, and seeded data. Verify each flow on the final submission build.
-
 ## User roles and booking rules
 
 The application distinguishes **students** and **academic staff**.
