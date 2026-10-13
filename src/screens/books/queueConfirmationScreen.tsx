@@ -20,6 +20,7 @@ import {
   subscribeToBookQueue,
 } from "../../services/bookService";
 import type { Book, BookQueueEntry } from "../../types";
+import BookCoverImage from "../../components/common/BookCoverImage";
 
 type RouteParams = { bookId: string };
 
@@ -206,13 +207,16 @@ export default function QueueConfirmationScreen() {
         </View>
 
         <View style={styles.bookCard}>
-          {book.coverUrl ? (
-            <Image source={{ uri: book.coverUrl }} style={styles.bookCover} resizeMode="cover" />
-          ) : (
-            <View style={[styles.bookCover, styles.bookCoverPlaceholder]}>
-              <Ionicons name="book-outline" size={28} color={COLORS.navy} />
-            </View>
-          )}
+          <BookCoverImage
+            coverUrl={book.coverUrl}
+            title={book.title}
+            author={book.author}
+            category={book.category}
+            width={77}
+            height={106}
+            borderRadius={8}
+            resizeMode="contain"
+          />
           <View style={styles.bookTextColumn}>
             <Text style={styles.bookCardLabel}>SELECTED BOOK</Text>
             <Text style={styles.bookTitle} numberOfLines={3}>{book.title}</Text>

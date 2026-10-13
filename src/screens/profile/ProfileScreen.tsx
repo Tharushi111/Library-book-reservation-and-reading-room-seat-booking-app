@@ -42,7 +42,7 @@ type ProfileData = {
   email: string | null;
   student_id: string | null;
   phone_number: string | null;
-  role: "student" | "staff";
+  role: "student" | "staff" | "admin";
   avatar_url: string | null;
 };
 
@@ -205,10 +205,7 @@ export default function ProfileScreen({
   };
 
   const handleChangePassword = () => {
-    Alert.alert(
-      "Change Password",
-      "Password change functionality will be implemented next."
-    );
+    rootNavigation?.navigate("ResetPassword");
   };
 
   const handleNotificationSettings = () => {
@@ -267,8 +264,12 @@ export default function ProfileScreen({
   const displayName =
     fullName || "Library User";
 
+  const isAdmin = profile?.role === "admin";
+
   const identification =
-    profile?.role === "staff"
+    profile?.role === "admin"
+      ? "Library Administrator"
+      : profile?.role === "staff"
       ? "Academic Staff"
       : profile?.student_id ||
         "Student";
@@ -360,6 +361,15 @@ export default function ProfileScreen({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.menuSection}>
+            {isAdmin && (
+              <ProfileMenuItem
+                icon="shield-checkmark-outline"
+                title="Admin Portal"
+                subtitle="Access library management & administration"
+                onPress={() => rootNavigation?.navigate("StaffTabs")}
+              />
+            )}
+
             <ProfileMenuItem
               icon="person-outline"
               title="Edit Profile"
@@ -424,12 +434,7 @@ export default function ProfileScreen({
 // =========================================================
 
 type MenuProps = {
-  icon:
-    | "person-outline"
-    | "lock-closed-outline"
-    | "notifications-outline"
-    | "help-circle-outline"
-    | "information-circle-outline";
+  icon: keyof typeof Ionicons.glyphMap;
 
   title: string;
   subtitle: string;

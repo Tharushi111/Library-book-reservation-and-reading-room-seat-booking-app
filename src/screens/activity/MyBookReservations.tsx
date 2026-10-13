@@ -22,6 +22,7 @@ import {
   ReservationItem,
   WaitingListItem,
 } from '../../services/activityService';
+import BookCoverImage from '../../components/common/BookCoverImage';
 
 export default function MyBookReservations({ navigation }: any) {
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
@@ -113,7 +114,9 @@ export default function MyBookReservations({ navigation }: any) {
   const activeReservations = reservations.filter(
     (item) =>
       item.status === 'Reserved' ||
-      item.status === 'Ready for Collection'
+      item.status === 'Ready for Collection' ||
+      item.status === 'Ready for Pickup' ||
+      item.status === 'ready_for_pickup'
   );
 
   const pastReservations = reservations.filter(
@@ -133,6 +136,8 @@ export default function MyBookReservations({ navigation }: any) {
       case 'Returned':
         return COLORS.success;
       case 'Ready for Collection':
+      case 'Ready for Pickup':
+      case 'ready_for_pickup':
         return COLORS.warning;
       case 'Cancelled':
       case 'Expired':
@@ -149,6 +154,8 @@ export default function MyBookReservations({ navigation }: any) {
       case 'Returned':
         return '#E6F4EA';
       case 'Ready for Collection':
+      case 'Ready for Pickup':
+      case 'ready_for_pickup':
         return '#FEF3C7';
       case 'Cancelled':
       case 'Expired':
@@ -160,7 +167,14 @@ export default function MyBookReservations({ navigation }: any) {
 
   const renderItem = ({ item }: { item: ReservationItem }) => (
     <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.bookCover} />
+      <BookCoverImage
+        coverUrl={item.image}
+        title={item.title}
+        width={60}
+        height={80}
+        borderRadius={8}
+        containerStyle={{ marginRight: 15 }}
+      />
 
       <View style={styles.cardContent}>
         <Text style={styles.bookTitle} numberOfLines={1}>
@@ -220,7 +234,14 @@ export default function MyBookReservations({ navigation }: any) {
     return (
       <View style={styles.waitingCard}>
         <View style={styles.waitingCardTop}>
-          <Image source={{ uri: item.image }} style={styles.waitingBookCover} />
+          <BookCoverImage
+            coverUrl={item.image}
+            title={item.title}
+            width={66}
+            height={90}
+            borderRadius={8}
+            containerStyle={{ marginRight: 14 }}
+          />
           <View style={styles.waitingBookInfo}>
             <Text style={styles.bookTitle} numberOfLines={2}>{item.title}</Text>
             <View style={styles.waitingBadge}>

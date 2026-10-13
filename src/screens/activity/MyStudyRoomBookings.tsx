@@ -33,6 +33,7 @@ import {
   cancelRoomBooking,
   RoomBookingItem,
 } from '../../services/activityService';
+import RoomCardImage from '../../components/common/RoomCardImage';
 
 export default function MyStudyRoomBookings({
   navigation,
@@ -95,6 +96,17 @@ export default function MyStudyRoomBookings({
   const handleCancelBooking = (
     booking: RoomBookingItem
   ) => {
+    if (
+      booking.isApproved ||
+      booking.status === 'Approved'
+    ) {
+      Alert.alert(
+        'Booking Approved',
+        'This booking has been approved by library staff and cannot be cancelled online. Please contact the library helpdesk if you need assistance.'
+      );
+      return;
+    }
+
     if (
       booking.status ===
       'Cancelled'
@@ -177,6 +189,10 @@ export default function MyStudyRoomBookings({
       item.status ===
       'Cancelled';
 
+    const isApproved =
+      Boolean(item.isApproved) ||
+      item.status === 'Approved';
+
     return (
       <TouchableOpacity
         style={
@@ -193,13 +209,19 @@ export default function MyStudyRoomBookings({
           )
         }
       >
-        <Image
-          source={{
-            uri: item.image,
-          }}
-          style={
-            styles.roomImage
+        <RoomCardImage
+          imageUrl={item.image}
+          roomName={item.room}
+          roomType={
+            item.floor.toLowerCase().includes("conference")
+              ? "conference_room"
+              : item.floor.toLowerCase().includes("collab")
+              ? "collaborative_space"
+              : "study_room"
           }
+          width={80}
+          height={80}
+          borderRadius={8}
         />
 
         <View
@@ -311,6 +333,9 @@ export default function MyStudyRoomBookings({
             <View
               style={[
                 styles.statusBadge,
+                isApproved && {
+                  backgroundColor: '#E6F4EA',
+                },
                 isCancelled && {
                   backgroundColor:
                     '#FEE2E2',
@@ -320,6 +345,9 @@ export default function MyStudyRoomBookings({
               <Text
                 style={[
                   styles.statusText,
+                  isApproved && {
+                    color: '#16A34A',
+                  },
                   isCancelled && {
                     color:
                       COLORS.danger,
@@ -330,28 +358,48 @@ export default function MyStudyRoomBookings({
               </Text>
             </View>
 
-            <TouchableOpacity
-              activeOpacity={0.75}
-              onPress={() =>
-                handleCancelBooking(
-                  item
-                )
-              }
-            >
-              <Text
-                style={[
-                  styles.cancelBtnText,
-                  isCancelled && {
-                    color:
-                      COLORS.textSecondary,
-                  },
-                ]}
+            {isApproved ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons
+                  name="lock-closed"
+                  size={12}
+                  color={COLORS.textSecondary}
+                  style={{ marginRight: 4 }}
+                />
+                <Text
+                  style={[
+                    styles.cancelBtnText,
+                    { color: COLORS.textSecondary },
+                  ]}
+                >
+                  Approved
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.75}
+                disabled={isCancelled}
+                onPress={() =>
+                  handleCancelBooking(
+                    item
+                  )
+                }
               >
-                {isCancelled
-                  ? 'Cancelled'
-                  : 'Cancel Booking'}
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.cancelBtnText,
+                    isCancelled && {
+                      color:
+                        COLORS.textSecondary,
+                    },
+                  ]}
+                >
+                  {isCancelled
+                    ? 'Cancelled'
+                    : 'Cancel Booking'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableOpacity>

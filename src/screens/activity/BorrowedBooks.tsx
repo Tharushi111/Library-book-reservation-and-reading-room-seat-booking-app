@@ -31,6 +31,7 @@ import {
   getUserBorrowedBooks,
   BorrowedBookItem,
 } from '../../services/activityService';
+import BookCoverImage from '../../components/common/BookCoverImage';
 
 export default function BorrowedBooks({
   navigation,
@@ -146,13 +147,13 @@ export default function BorrowedBooks({
           styles.cardDueSoon,
       ]}
     >
-      <Image
-        source={{
-          uri: item.image,
-        }}
-        style={
-          styles.bookCover
-        }
+      <BookCoverImage
+        coverUrl={item.image}
+        title={item.title}
+        width={60}
+        height={80}
+        borderRadius={8}
+        containerStyle={{ marginRight: 15 }}
       />
 
       <View

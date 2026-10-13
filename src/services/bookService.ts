@@ -1,45 +1,29 @@
 import { supabase } from "./supabase";
-
-
+import { createNotification } from "./notificationService";
 
 import type {
-
   Book,
-
   BookAvailabilityStatus,
-
   BookQueueEntry,
-
   BookReservation,
-
 } from "../types";
 
 
 
 export async function expireOverdueReservations(): Promise<void> {
-
-  const { error } = await supabase.rpc(
-
-    "expire_overdue_book_reservations"
-
-  );
-
-
-
-  if (error) {
-
-    console.error(
-
-      "Error expiring overdue reservations:",
-
-      error
-
+  try {
+    const { error } = await supabase.rpc(
+      "expire_overdue_book_reservations"
     );
-
-    throw error;
-
+    if (error) {
+      console.warn(
+        "Notice: expire_overdue_book_reservations:",
+        error.message
+      );
+    }
+  } catch (err) {
+    console.warn("Unable to invoke expire_overdue_book_reservations:", err);
   }
-
 }
 
 
@@ -1008,14 +992,22 @@ export async function reserveBook(
 
   }
 
-
+  // Dispatch in-app notification to student
+  try {
+    const bookTitle = (fullReservation as any)?.book?.title || (book as any)?.title || "Book";
+    await createNotification({
+      userId,
+      title: "Book Reserved",
+      message: `You have successfully reserved "${bookTitle}". Please wait for notification when it is ready for collection.`,
+      type: "collection_reminder",
+    });
+  } catch (notifErr) {
+    console.warn("Could not dispatch reservation notification:", notifErr);
+  }
 
   return mapReservation(
-
     fullReservation
-
   );
-
 }
 
 
@@ -1626,10 +1618,20 @@ export async function joinQueue(
 
   }
 
-
+  // Dispatch in-app notification to student
+  try {
+    const bookTitle = entry?.book?.title || "Book";
+    await createNotification({
+      userId: currentUserId,
+      title: "Joined Waiting Queue",
+      message: `You joined the waiting queue for "${bookTitle}" at position #${nextPosition}. We'll notify you when it becomes available.`,
+      type: "system",
+    });
+  } catch (notifErr) {
+    console.warn("Could not dispatch queue notification:", notifErr);
+  }
 
   return entry;
-
 }
 
 

@@ -36,9 +36,9 @@ export default function SpaceReservationScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const studyRooms = rooms.filter((r) => r.roomType === "study_room");
+  const studentRooms = rooms.filter((r) => r.roomType === "study_room" || r.roomType === "collaborative_space");
   const conferenceRooms = rooms.filter((r) => r.roomType === "conference_room");
-  const availableStudy = studyRooms.filter((r) => r.status === "available").length;
+  const availableStudent = studentRooms.filter((r) => r.status === "available").length;
   const availableConference = conferenceRooms.filter((r) => r.status === "available").length;
 
   return (
@@ -62,7 +62,7 @@ export default function SpaceReservationScreen() {
             <View style={styles.heroAvailability}>
               <View style={styles.availabilityIcon}><Ionicons name="checkmark-circle" size={21} color="#22B37B" /></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.availabilityNumber}>{availableStudy} <Text style={styles.availabilityTotal}>/ {studyRooms.length} study rooms</Text></Text>
+                <Text style={styles.availabilityNumber}>{availableStudent} <Text style={styles.availabilityTotal}>/ {studentRooms.length} student spaces</Text></Text>
                 <Text style={styles.availabilityText}>Currently available</Text>
               </View>
               <Ionicons name="arrow-forward" size={18} color={theme.primary} />
@@ -76,9 +76,9 @@ export default function SpaceReservationScreen() {
           <View style={styles.categoryRow}>
             <Pressable onPress={() => navigation.navigate("StudyRooms")} style={({ pressed }) => [styles.categoryCard, styles.studyCard, pressed && styles.pressed]} accessibilityRole="button">
               <View style={styles.categoryIconBlue}><Ionicons name="book-outline" size={27} color={theme.primary} /></View>
-              <Text style={styles.categoryTitle}>Study Rooms</Text>
+              <Text style={styles.categoryTitle}>Study & Group Spaces</Text>
               <Text style={styles.categoryDescription}>For student group study</Text>
-              <View style={styles.categoryBottom}><Text style={styles.categoryCount}>{studyRooms.length} rooms</Text><Ionicons name="arrow-forward-circle" size={24} color={theme.primary} /></View>
+              <View style={styles.categoryBottom}><Text style={styles.categoryCount}>{studentRooms.length} rooms</Text><Ionicons name="arrow-forward-circle" size={24} color={theme.primary} /></View>
             </Pressable>
             <Pressable onPress={() => navigation.navigate("StudyRooms")} style={({ pressed }) => [styles.categoryCard, styles.conferenceCard, pressed && styles.pressed]} accessibilityRole="button">
               <View style={styles.categoryIconOrange}><Ionicons name="people-outline" size={27} color={theme.secondary} /></View>

@@ -36,6 +36,8 @@ const THEME = {
   redText: "#C33A46",
 };
 
+import BookCoverImage from "../../components/common/BookCoverImage";
+
 // Keep the UI label consistent if database rows use either "Journal" or "Journals".
 function categoryLabel(value?: string | null): string {
   const trimmed = (value || "").trim();
@@ -43,22 +45,18 @@ function categoryLabel(value?: string | null): string {
   return /^journals?$/i.test(trimmed) ? "Journals" : trimmed;
 }
 
-function BookCover({ book }: { book: Book }) {
+function BookCover({ book, coverWidth }: { book: Book; coverWidth?: number }) {
   return (
     <View style={styles.coverArea}>
-      {book.coverUrl ? (
-        <Image
-          source={{ uri: book.coverUrl }}
-          style={styles.cover}
-          resizeMode="contain"
-          accessibilityLabel={`${book.title} cover`}
-        />
-      ) : (
-        <View style={styles.coverFallback}>
-          <Ionicons name="book-outline" size={36} color="#A7B4CA" />
-          <Text style={styles.coverFallbackText}>No cover</Text>
-        </View>
-      )}
+      <BookCoverImage
+        coverUrl={book.coverUrl}
+        title={book.title}
+        author={book.author}
+        category={book.category}
+        width={coverWidth || 108}
+        height={152}
+        borderRadius={8}
+      />
     </View>
   );
 }
@@ -141,7 +139,7 @@ export default function BookCatalogueScreen() {
         accessibilityRole="button"
         accessibilityLabel={`View details for ${item.title}`}
       >
-        <BookCover book={item} />
+        <BookCover book={item} coverWidth={Math.min(112, Math.max(90, cardWidth - 28))} />
         <View style={styles.cardBody}>
           <Text style={styles.cardCategory} numberOfLines={1}>
             {categoryLabel(item.category)}

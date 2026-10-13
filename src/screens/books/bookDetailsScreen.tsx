@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "../../types";
 import { getBookById, reserveBook } from "../../services/bookService";
+import BookCoverImage from "../../components/common/BookCoverImage";
 
 type RouteParams = { bookId: string };
 
@@ -162,18 +163,15 @@ export default function BookDetailsScreen() {
           <View style={styles.heroCircleLarge} />
           <View style={styles.heroCircleSmall} />
           <View style={styles.coverFrame}>
-            {book.coverUrl ? (
-              <Image
-                source={{ uri: book.coverUrl }}
-                style={styles.cover}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.coverPlaceholder}>
-                <Ionicons name="book-outline" size={56} color="#93A7C7" />
-                <Text style={styles.coverPlaceholderText}>No Cover Available</Text>
-              </View>
-            )}
+            <BookCoverImage
+              coverUrl={book.coverUrl}
+              title={book.title}
+              author={book.author}
+              category={book.category}
+              width={153}
+              height={210}
+              borderRadius={8}
+            />
           </View>
         </View>
 

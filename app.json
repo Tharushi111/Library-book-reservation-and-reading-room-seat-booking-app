@@ -2,6 +2,7 @@
   "expo": {
     "name": "SLIIT Library",
     "slug": "sliit-library",
+    "scheme": "sliitlibrary",
     "version": "1.0.0",
     "orientation": "portrait",
 

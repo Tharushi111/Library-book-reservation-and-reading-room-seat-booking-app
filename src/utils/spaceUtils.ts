@@ -1,6 +1,6 @@
 import { Room, RoomType } from "../types";
 
-export type UserRole = "student" | "staff";
+export type UserRole = "student" | "staff" | "admin";
 
 export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
   study_room: "Study room",
@@ -8,19 +8,21 @@ export const ROOM_TYPE_LABEL: Record<RoomType, string> = {
   collaborative_space: "Collaborative space",
 };
 
-export const STAFF_ONLY_MESSAGE = "Only lecturers and staff can book conference rooms.";
+export const STAFF_ONLY_MESSAGE = "Only lecturers, staff, and administrators can book conference rooms.";
 export const MAX_DAYS_AHEAD = 60;
 
 /* ---------- Roles and rules ---------- */
 
 export function parseRole(raw: unknown): UserRole {
   const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  return v === "staff" || v === "lecturer" ? "staff" : "student";
+  if (v === "admin") return "admin";
+  if (v === "staff" || v === "lecturer") return "staff";
+  return "student";
 }
 
-// Conference rooms are for lecturers/staff only. Students cannot book them.
+// Conference rooms are for lecturers/staff/admin only. Students cannot book them.
 export function canBookRoom(room: Pick<Room, "roomType">, role: UserRole): boolean {
-  return room.roomType !== "conference_room" || role === "staff";
+  return room.roomType !== "conference_room" || role === "staff" || role === "admin";
 }
 
 // Study rooms need 5+ people, conference rooms need 10+.

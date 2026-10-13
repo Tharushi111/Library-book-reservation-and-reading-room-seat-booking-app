@@ -4,10 +4,17 @@
 
 export type RootStackParamList = {
   // =====================================================
-  // MEMBER 1 - CORE ACCESS
+  // AUTHENTICATION
   // =====================================================
 
   Login: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
+
+  // =====================================================
+  // STUDENT FLOW (MEMBER 1 - CORE ACCESS)
+  // =====================================================
 
   MainTabs: undefined;
 
@@ -20,7 +27,9 @@ export type RootStackParamList = {
   // Additional profile CRUD screen
   AccountSettings: undefined;
 
+  // =====================================================
   // MEMBER 2 - BOOKS
+  // =====================================================
 
   BookCatalogue: undefined;
 
@@ -77,10 +86,47 @@ export type RootStackParamList = {
   ReservationDetails: {
     reservationId: string;
   };
+
+  // =====================================================
+  // STAFF & ADMIN PORTAL
+  // =====================================================
+
+  StaffTabs: undefined;
+
+  StaffBookDetails: {
+    bookId: string;
+  };
+
+  StaffAddEditBook: {
+    bookId?: string;
+  };
+
+  StaffLoanManagement: undefined;
+
+  StaffReservationManagement: undefined;
+
+  StaffRoomManagement: undefined;
+
+  StaffAddEditRoom: {
+    roomId?: string;
+  };
+
+  StaffRoomSchedule: {
+    roomId?: string;
+    roomName?: string;
+  };
+
+  StaffAnnouncement: undefined;
+
+  StaffAddEditAnnouncement: {
+    announcementId?: string;
+  };
+
+  AdminUserManagement: undefined;
 };
 
 // =========================================================
-// BOTTOM TAB NAVIGATION TYPES
+// BOTTOM TAB NAVIGATION TYPES (STUDENT)
 // =========================================================
 
 export type BottomTabParamList = {
@@ -97,4 +143,16 @@ export type BottomTabParamList = {
 
   // Member 1
   Profile: undefined;
+};
+
+// =========================================================
+// STAFF BOTTOM TAB NAVIGATION TYPES
+// =========================================================
+
+export type StaffTabParamList = {
+  StaffDashboard: undefined;
+  StaffBooks: undefined;
+  StaffReservations: undefined;
+  StaffLoans: undefined;
+  StaffMore: undefined;
 };

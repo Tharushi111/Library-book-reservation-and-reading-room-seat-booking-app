@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { createNotification } from "./notificationService";
 import { Room, RoomBooking, RoomType } from "../types";
 import {
   Interval,
@@ -34,6 +35,7 @@ type BookingRow = {
   end_time: string;
   participants: number;
   status: RoomBooking["status"];
+  approved_by?: string | null;
   created_at: string;
   rooms?: RoomRow | RoomRow[] | null;
 };
@@ -59,6 +61,7 @@ const mapBooking = (row: BookingRow): RoomBooking => {
     endTime: toHHMM(row.end_time),
     participants: row.participants,
     status: row.status,
+    approvedBy: row.approved_by ?? undefined,
     createdAt: row.created_at,
     room: roomRow ? mapRoom(roomRow) : undefined,
   };
@@ -268,7 +271,22 @@ export async function createRoomBooking(input: BookingInput): Promise<RoomBookin
     .single();
   if (error) throw toError(error);
 
-  return mapBooking(data as BookingRow);
+  const booking = mapBooking(data as BookingRow);
+
+  // Dispatch notification to student
+  try {
+    const roomName = (data as any)?.rooms?.name || room?.name || "Study Room";
+    await createNotification({
+      userId: user.id,
+      title: "Room Booking Submitted",
+      message: `Your booking for ${roomName} on ${input.date} (${input.startTime} - ${input.endTime}) has been submitted.`,
+      type: "room_booking",
+    });
+  } catch (notifErr) {
+    console.warn("Could not dispatch room booking notification:", notifErr);
+  }
+
+  return booking;
 }
 
 /* ---------- UPDATE (change time) ---------- */
@@ -325,15 +343,29 @@ export async function updateRoomBookingTimes(
 export async function cancelRoomBooking(bookingId: string): Promise<void> {
   const user = await requireUser();
 
+  const current = await getBookingById(bookingId);
+  if (current.approvedBy) {
+    throw new Error(
+      "This booking has already been approved by library staff and cannot be cancelled online."
+    );
+  }
+
   const { data, error } = await supabase
     .from("room_bookings")
-    .update({ status: "cancelled" })
+    .update({
+      status: "cancelled",
+      cancelled_at: new Date().toISOString(),
+      cancellation_reason: "Cancelled by student",
+    })
     .eq("id", bookingId)
     .eq("user_id", user.id)
     .eq("status", "active")
+    .is("approved_by", null)
     .select();
   if (error) throw toError(error);
   if (!data || data.length === 0) {
-    throw new Error("This booking can't be cancelled. It may already be cancelled or completed.");
+    throw new Error(
+      "This booking can't be cancelled. It may already be cancelled, completed, or approved by staff."
+    );
   }
 }

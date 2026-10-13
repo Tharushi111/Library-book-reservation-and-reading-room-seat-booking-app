@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { getBookingDetails, cancelRoomBooking, RoomBookingItem } from '../../services/activityService';
 import { useFocusEffect } from '@react-navigation/native';
+import RoomCardImage from '../../components/common/RoomCardImage';
 
 export default function BookingDetails({ route, navigation }: any) {
   const { bookingId, booking: initialBooking } = route.params || {};
@@ -46,6 +47,14 @@ export default function BookingDetails({ route, navigation }: any) {
 
   const handleCancel = () => {
     if (!booking) return;
+
+    if (booking.isApproved || booking.status === 'Approved') {
+      Alert.alert(
+        'Booking Approved',
+        'This booking has been approved by library staff and cannot be cancelled online. Please contact the library helpdesk.'
+      );
+      return;
+    }
 
     Alert.alert(
       'Cancel Room Booking',
@@ -109,6 +118,7 @@ export default function BookingDetails({ route, navigation }: any) {
   }
 
   const isCancelled = booking.status === 'Cancelled' || booking.status === 'Completed';
+  const isApproved = Boolean(booking.isApproved) || booking.status === 'Approved';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -121,7 +131,19 @@ export default function BookingDetails({ route, navigation }: any) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Image source={{ uri: booking.image }} style={styles.roomImage} />
+        <RoomCardImage
+          imageUrl={booking.image}
+          roomName={booking.room}
+          roomType={
+            booking.floor.toLowerCase().includes("conference")
+              ? "conference_room"
+              : booking.floor.toLowerCase().includes("collab")
+              ? "collaborative_space"
+              : "study_room"
+          }
+          height={160}
+          borderRadius={12}
+        />
         
         <View style={styles.detailsCard}>
           <Text style={styles.roomTitle}>{booking.room}</Text>
@@ -130,6 +152,7 @@ export default function BookingDetails({ route, navigation }: any) {
             <View
               style={[
                 styles.statusBadge,
+                isApproved && { backgroundColor: '#E6F4EA' },
                 booking.status === 'Cancelled' && { backgroundColor: '#FEE2E2' },
                 booking.status === 'Completed' && { backgroundColor: '#E0E7FF' },
               ]}
@@ -137,6 +160,7 @@ export default function BookingDetails({ route, navigation }: any) {
               <Text
                 style={[
                   styles.statusText,
+                  isApproved && { color: '#16A34A' },
                   booking.status === 'Cancelled' && { color: COLORS.danger },
                   booking.status === 'Completed' && { color: COLORS.primary },
                 ]}
@@ -192,7 +216,17 @@ export default function BookingDetails({ route, navigation }: any) {
           )}
         </View>
 
-        {!isCancelled && (
+        {isApproved ? (
+          <View style={styles.approvedBanner}>
+            <Ionicons name="checkmark-circle" size={24} color="#16A34A" />
+            <View style={styles.approvedBannerTextContainer}>
+              <Text style={styles.approvedBannerTitle}>Booking Approved by Staff</Text>
+              <Text style={styles.approvedBannerText}>
+                This booking has been approved by library staff and cannot be cancelled online. Please contact the library helpdesk if you need assistance.
+              </Text>
+            </View>
+          </View>
+        ) : !isCancelled ? (
           <TouchableOpacity 
             style={styles.cancelButton} 
             onPress={handleCancel}
@@ -204,7 +238,7 @@ export default function BookingDetails({ route, navigation }: any) {
               <Text style={styles.cancelButtonText}>Cancel Booking</Text>
             )}
           </TouchableOpacity>
-        )}
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -340,5 +374,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 30,
+  },
+  approvedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E6F4EA',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 15,
+  },
+  approvedBannerTextContainer: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  approvedBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  approvedBannerText: {
+    fontSize: 12,
+    color: '#166534',
+    marginTop: 3,
+    lineHeight: 17,
   },
 });

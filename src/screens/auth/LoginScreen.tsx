@@ -17,9 +17,16 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { RootStackParamList } from "../../navigation/types";
-import { signIn } from "../../services/authService";
+import {
+  signIn,
+  signInWithGoogle,
+  getUserProfile,
+  validateSliitEmail,
+  signOut,
+  formatAuthErrorMessage,
+} from "../../services/authService";
 import { COLORS } from "../../constants/colors";
+import { RootStackParamList } from "../../navigation/types";
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -39,7 +46,6 @@ export default function LoginScreen({
     useState(false);
 
   // EMAIL + PASSWORD LOGIN
-
   const handleLogin = async () => {
     const cleanEmail = email.trim().toLowerCase();
 
@@ -70,17 +76,25 @@ export default function LoginScreen({
     try {
       setLoading(true);
 
-      await signIn(
+      const data = await signIn(
         cleanEmail,
         password
       );
+
+      // Check role for routing - only admin goes to StaffTabs, academic staff and students use MainTabs
+      if (data?.user) {
+        const profile = await getUserProfile(data.user.id);
+        if (profile?.role === "admin") {
+          navigation.replace("StaffTabs");
+          return;
+        }
+      }
 
       navigation.replace("MainTabs");
     } catch (error: any) {
       Alert.alert(
         "Login Failed",
-        error?.message ||
-          "Unable to login. Please check your email and password."
+        formatAuthErrorMessage(error)
       );
     } finally {
       setLoading(false);
@@ -88,20 +102,24 @@ export default function LoginScreen({
   };
 
   // FORGOT PASSWORD
-
   const handleForgotPassword = () => {
-    Alert.alert(
-      "Forgot Password",
-      "Password reset functionality will be added next."
-    );
+    navigation.navigate("ForgotPassword");
   };
 
   // SLIIT / GOOGLE ACCOUNT LOGIN
-  const handleSLIITAccount = () => {
-    Alert.alert(
-      "SLIIT Account",
-      "SLIIT account sign-in will be added later."
-    );
+  const handleSLIITAccount = async () => {
+    try {
+      setLoading(true);
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert(
+        "SLIIT Account Sign In",
+        error?.message ||
+          "Could not initialize SLIIT Google authentication. Please ensure Google sign-in is enabled in your Supabase project."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -320,6 +338,14 @@ export default function LoginScreen({
               </View>
             </TouchableOpacity>
 
+            {/* SIGN UP REDIRECT */}
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupPromptText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+                <Text style={styles.signupLinkText}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+
             {/*SECURITY TEXT */}
 
             <View style={styles.secureContainer}>
@@ -519,12 +545,32 @@ const styles = StyleSheet.create({
   },
 
   
+  // SIGNUP
+  signupContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 4,
+  },
+
+  signupPromptText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+  },
+
+  signupLinkText: {
+    color: COLORS.primary,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
   // SECURITY TEXT
   secureContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 29,
+    marginTop: 22,
   },
 
   secureText: {

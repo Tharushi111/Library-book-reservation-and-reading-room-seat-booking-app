@@ -1,0 +1,7 @@
+{
+  "mssql.intelliSense.enableErrorChecking": false,
+  "mssql.intelliSense.enableSuggestions": false,
+  "files.associations": {
+    "**/supabase/migrations/*.sql": "sql"
+  }
+}

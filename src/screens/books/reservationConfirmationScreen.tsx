@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BookReservation } from "../../types";
 import { cancelReservation, getReservation } from "../../services/bookService";
+import BookCoverImage from "../../components/common/BookCoverImage";
 
 const C = {
   background: "#F7F9FD",
@@ -205,17 +206,16 @@ export default function ReservationConfirmationScreen() {
             <Text style={styles.cardHeading}>YOUR RESERVED BOOK</Text>
           </View>
           <View style={styles.bookRow}>
-            {reservation.book?.coverUrl ? (
-              <Image
-                source={{ uri: reservation.book.coverUrl }}
-                style={styles.bookCover}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={[styles.bookCover, styles.coverFallback]}>
-                <Ionicons name="book" size={32} color={C.blue} />
-              </View>
-            )}
+            <BookCoverImage
+              coverUrl={reservation.book?.coverUrl}
+              title={reservation.book?.title ?? "Your book"}
+              author={reservation.book?.author}
+              category={reservation.book?.category}
+              width={76}
+              height={103}
+              borderRadius={8}
+              resizeMode="contain"
+            />
             <View style={styles.bookInfo}>
               <Text style={styles.bookTitle} numberOfLines={3}>
                 {reservation.book?.title ?? "Your book"}

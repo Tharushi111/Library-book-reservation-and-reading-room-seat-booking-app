@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -44,6 +45,7 @@ type NotificationItem = {
   type: NotificationType;
   is_read: boolean;
   created_at: string;
+  announcement_id?: string;
 };
 
 type FilterType =
@@ -149,6 +151,32 @@ export default function NotificationsScreen({
       loadNotifications();
     }, [loadNotifications])
   );
+
+  // Realtime subscription: immediately reflect when notifications are inserted, updated, or deleted
+  useEffect(() => {
+    if (!userId) return;
+
+    const channelName = `user-notifications-${userId}-${Math.random().toString(36).substring(2, 9)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          loadNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, loadNotifications]);
 
   // =====================================================
   // UNREAD COUNT
@@ -280,15 +308,11 @@ export default function NotificationsScreen({
         );
       }
 
-      /*
-       * Later, if needed, we can
-       * navigate different notification
-       * types to their related screens.
-       *
-       * Example:
-       * room_booking -> booking details
-       * book_available -> book details
-       */
+      Alert.alert(
+        notification.title,
+        notification.message,
+        [{ text: "OK" }]
+      );
     };
 
   // =====================================================

@@ -24,6 +24,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../../services/supabase";
 import { COLORS } from "../../constants/colors";
 import { RootStackParamList } from "../../navigation/types";
+import BookCoverImage from "../../components/common/BookCoverImage";
 
 type Props =
   NativeStackScreenProps<
@@ -386,31 +387,15 @@ export default function SearchResultsScreen({
                     styles.coverContainer
                   }
                 >
-                  {book.cover_url ? (
-                    <Image
-                      source={{
-                        uri: book.cover_url,
-                      }}
-                      style={
-                        styles.bookCover
-                      }
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      style={
-                        styles.coverPlaceholder
-                      }
-                    >
-                      <Ionicons
-                        name="book-outline"
-                        size={30}
-                        color={
-                          COLORS.primary
-                        }
-                      />
-                    </View>
-                  )}
+                  <BookCoverImage
+                    coverUrl={book.cover_url}
+                    title={book.title}
+                    author={book.author}
+                    category={book.category}
+                    width={72}
+                    height={96}
+                    borderRadius={7}
+                  />
                 </View>
 
                 {/* INFO */}

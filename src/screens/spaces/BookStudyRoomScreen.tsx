@@ -17,6 +17,7 @@ import DateCalendar from "./DateCalendar";
 import { ErrorView, LoadingView, PrimaryButton, ScreenHeader } from "./SpacesUI";
 import TimeSlotPicker from "./TimeSlotPicker";
 import { theme } from "./spacesTheme";
+import RoomCardImage from "../../components/common/RoomCardImage";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, "BookStudyRoom">;
@@ -126,9 +127,15 @@ export default function BookStudyRoomScreen() {
     <View style={styles.screen}>
       <ScreenHeader title={title} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.roomCard}>
-          <View style={styles.roomIcon}><Ionicons name={room.roomType === "conference_room" ? "business-outline" : "library-outline"} size={25} color={theme.primary} /></View>
-          <View style={{ flex: 1 }}><Text style={styles.roomName}>{room.name}</Text><Text style={styles.roomMeta}>{ROOM_TYPE_LABEL[room.roomType]} · Up to {room.capacity} people</Text></View>
+        <View style={{ marginBottom: 18 }}>
+          <RoomCardImage
+            imageUrl={room.imageUrl}
+            roomName={room.name}
+            roomType={room.roomType}
+            capacity={room.capacity}
+            location={room.location}
+            height={136}
+          />
         </View>
 
         <View style={styles.stepHeading}><View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View><View><Text style={styles.sectionTitle}>Choose a date</Text><Text style={styles.sectionHint}>Select your preferred booking day</Text></View></View>

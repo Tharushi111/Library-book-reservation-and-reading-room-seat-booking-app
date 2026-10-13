@@ -1,27 +1,15 @@
 import React from "react";
-
-import {
-  StyleSheet,
-  View,
-} from "react-native";
-
-import {
-  NavigationContainer,
-} from "@react-navigation/native";
-
+import { StyleSheet, View } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-import {
-  StatusBar,
-} from "expo-status-bar";
-
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 
 import RootNavigator from "./src/navigation/RootNavigator";
-
+import { AuthProvider } from "./src/context/AuthContext";
 import "./src/services/supabase";
 
 // =========================================================
@@ -34,42 +22,47 @@ SplashScreen.setOptions({
 });
 
 // =========================================================
+// DEEP LINKING
+// =========================================================
+
+const linking = {
+  prefixes: ["sliitlibrary://"],
+  config: {
+    screens: {
+      Login: "login",
+      SignUp: "signup",
+      ForgotPassword: "forgot-password",
+      ResetPassword: "reset-password",
+      MainTabs: "student",
+      StaffTabs: "staff",
+    },
+  },
+};
+
+// =========================================================
 // APP CONTENT
 // =========================================================
 
 function AppContent() {
-  const insets =
-    useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={
-        styles.container
-      }
-    >
+    <View style={styles.container}>
       {/* PHONE STATUS BAR AREA */}
-      <StatusBar
-        style="light"
-        hidden={false}
-      />
+      <StatusBar style="light" hidden={false} />
 
       <View
         style={[
           styles.statusBarBackground,
           {
-            height:
-              insets.top,
+            height: insets.top,
           },
         ]}
       />
 
       {/* APPLICATION */}
-      <View
-        style={
-          styles.appContent
-        }
-      >
-        <NavigationContainer>
+      <View style={styles.appContent}>
+        <NavigationContainer linking={linking}>
           <RootNavigator />
         </NavigationContainer>
       </View>
@@ -84,7 +77,9 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
@@ -93,22 +88,16 @@ export default function App() {
 // STYLES
 // =========================================================
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#0B4DA2",
-    },
-
-    statusBarBackground: {
-      backgroundColor:
-        "#0B4DA2",
-    },
-
-    appContent: {
-      flex: 1,
-      backgroundColor:
-        "#FFFFFF",
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0B4DA2",
+  },
+  statusBarBackground: {
+    backgroundColor: "#0B4DA2",
+  },
+  appContent: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+});

@@ -17,6 +17,7 @@ import {
   cancelReservation,
   ReservationItem,
 } from '../../services/activityService';
+import BookCoverImage from '../../components/common/BookCoverImage';
 
 export default function ReservationDetails({ route, navigation }: any) {
   const passedReservation: ReservationItem | undefined = route?.params?.reservation;
@@ -183,7 +184,10 @@ export default function ReservationDetails({ route, navigation }: any) {
     item.status === 'Expired' ||
     item.status === 'Returned';
 
-  const isReady = item.status === 'Ready for Collection';
+  const isReady =
+    item.status === 'Ready for Collection' ||
+    item.status === 'Ready for Pickup' ||
+    item.status === 'ready_for_pickup';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -200,7 +204,14 @@ export default function ReservationDetails({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.bookCard}>
-          <Image source={{ uri: item.image }} style={styles.bookCover} />
+          <BookCoverImage
+            coverUrl={item.image}
+            title={item.title}
+            width={70}
+            height={100}
+            borderRadius={8}
+            containerStyle={{ marginRight: 15 }}
+          />
           <View style={styles.bookInfo}>
             <Text style={styles.bookTitle}>{item.title}</Text>
             {/* Book UUID intentionally not displayed. */}

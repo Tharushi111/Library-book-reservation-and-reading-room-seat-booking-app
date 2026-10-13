@@ -10,6 +10,7 @@ import { Room } from "../../types";
 import { STAFF_ONLY_MESSAGE, UserRole, canBookRoom, getErrorMessage } from "../../utils/spaceUtils";
 import { ErrorView, LoadingView, PrimaryButton, ScreenHeader, StatusBadge } from "./SpacesUI";
 import { theme } from "./spacesTheme";
+import RoomCardImage from "../../components/common/RoomCardImage";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,7 +28,14 @@ export default function StudyRoomsScreen() {
       else setLoading(true);
       setError(null);
       const [allRooms, userRole] = await Promise.all([getRooms(), getCurrentUserRole()]);
-      setRooms(allRooms.filter((r) => r.roomType === "study_room" || r.roomType === "conference_room"));
+      setRooms(
+        allRooms.filter(
+          (r) =>
+            r.roomType === "study_room" ||
+            r.roomType === "collaborative_space" ||
+            r.roomType === "conference_room"
+        )
+      );
       setRole(userRole);
     } catch (e) {
       setError(getErrorMessage(e, "Could not load rooms."));
@@ -40,8 +48,16 @@ export default function StudyRoomsScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const sections = [
-    { title: "Study rooms", description: "Collaborative spaces for students", data: rooms.filter((r) => r.roomType === "study_room") },
-    { title: "Conference rooms", description: "For lecturers and staff only", data: rooms.filter((r) => r.roomType === "conference_room") },
+    {
+      title: "Student Study & Collaborative Spaces",
+      description: "Available for students (minimum 5 participants)",
+      data: rooms.filter((r) => r.roomType === "study_room" || r.roomType === "collaborative_space"),
+    },
+    {
+      title: "Conference Rooms",
+      description: "For authorized academic and library staff only (minimum 10 staff)",
+      data: rooms.filter((r) => r.roomType === "conference_room"),
+    },
   ].filter((s) => s.data.length > 0);
 
   const renderRoom = ({ item }: { item: Room }) => {
@@ -55,16 +71,14 @@ export default function StudyRoomsScreen() {
     return (
       <View style={styles.card}>
         <View style={styles.imageWrap}>
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
-          ) : (
-            <View style={[styles.image, styles.imagePlaceholder]}>
-              <View style={styles.placeholderCircle}>
-                <Ionicons name={staffOnly ? "business-outline" : "library-outline"} size={46} color={staffOnly ? theme.secondary : theme.primary} />
-              </View>
-              <Text style={styles.placeholderText}>{staffOnly ? "Conference space" : "Study space"}</Text>
-            </View>
-          )}
+          <RoomCardImage
+            imageUrl={item.imageUrl}
+            roomName={item.name}
+            roomType={item.roomType}
+            capacity={item.capacity}
+            location={item.location}
+            height={160}
+          />
           <View style={styles.imageBadge}><StatusBadge label={badgeLabel} color={badgeColor} /></View>
         </View>
         <View style={styles.cardBody}>
