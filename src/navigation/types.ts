@@ -101,7 +101,23 @@ export type RootStackParamList = {
     bookId?: string;
   };
 
-  StaffLoanManagement: undefined;
+  StaffLoanManagement:
+    | {
+        preselectedBookId?: string;
+        preselectedStudentId?: string;
+        preselectedReservationId?: string;
+        preselectedCopyId?: string;
+      }
+    | undefined;
+
+  StaffIssueLoan:
+    | {
+        preselectedBookId?: string;
+        preselectedStudentId?: string;
+        preselectedReservationId?: string;
+        preselectedCopyId?: string;
+      }
+    | undefined;
 
   StaffReservationManagement: undefined;
 
@@ -153,6 +169,13 @@ export type StaffTabParamList = {
   StaffDashboard: undefined;
   StaffBooks: undefined;
   StaffReservations: undefined;
-  StaffLoans: undefined;
+  StaffLoans:
+    | {
+        preselectedBookId?: string;
+        preselectedStudentId?: string;
+        preselectedReservationId?: string;
+        preselectedCopyId?: string;
+      }
+    | undefined;
   StaffMore: undefined;
 };

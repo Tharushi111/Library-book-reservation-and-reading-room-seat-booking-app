@@ -162,6 +162,10 @@ export default function RootNavigator() {
         component={StaffLoanManagementScreen}
       />
       <Stack.Screen
+        name="StaffIssueLoan"
+        component={StaffLoanManagementScreen}
+      />
+      <Stack.Screen
         name="StaffReservationManagement"
         component={StaffReservationManagementScreen}
       />

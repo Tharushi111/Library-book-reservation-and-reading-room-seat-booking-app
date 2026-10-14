@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { COLORS } from "../../constants/colors";
+import { supabase } from "../../services/supabase";
 import {
   getActiveLoans,
   getLoanHistory,
@@ -59,13 +60,79 @@ export default function StaffLoanManagementScreen() {
   const [loanDays, setLoanDays] = useState("14");
   const [issuing, setIssuing] = useState(false);
 
-  // Preselected params if navigated from Reservation screen
+  // Preselected params if navigated from Reservation screen or Dashboard
   useEffect(() => {
-    if (route.params?.preselectedBookId) {
+    if (route.params?.preselectedBookId || route.params?.preselectedStudentId) {
       setActiveTab("issue");
-      if (route.params.preselectedCopyId) {
-        setSelectedCopyId(route.params.preselectedCopyId);
-      }
+
+      const loadPreselected = async () => {
+        try {
+          if (route.params?.preselectedBookId) {
+            const { data: b } = await supabase
+              .from("books")
+              .select("*")
+              .eq("id", route.params.preselectedBookId)
+              .single();
+
+            if (b) {
+              const bookObj: Book = {
+                id: b.id,
+                title: b.title,
+                author: b.author,
+                isbn: b.isbn ?? "",
+                category: b.category,
+                availableCopies: b.available_copies ?? 1,
+                totalCopies: b.total_copies ?? 1,
+                coverUrl: b.cover_url ?? b.image_url ?? undefined,
+                publicationYear: b.published_year ?? 2024,
+                availabilityStatus: b.availability_status ?? "available",
+                description: b.description ?? undefined,
+              };
+              setSelectedBook(bookObj);
+              setBookSearch(b.title);
+
+              const copies = await getBookCopies(b.id);
+              const avails = copies.filter(
+                (c) => c.status === "available" || c.id === route.params?.preselectedCopyId
+              );
+              setAvailableCopies(avails);
+              if (route.params?.preselectedCopyId) {
+                setSelectedCopyId(route.params.preselectedCopyId);
+              } else if (avails.length > 0) {
+                setSelectedCopyId(avails[0].id);
+              }
+            }
+          }
+
+          if (route.params?.preselectedStudentId) {
+            const { data: p } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", route.params.preselectedStudentId)
+              .single();
+
+            if (p) {
+              const studentObj: UserProfile = {
+                id: p.id,
+                firstName: p.first_name,
+                lastName: p.last_name,
+                email: p.email ?? "",
+                studentId: p.student_id ?? undefined,
+                phoneNumber: p.phone_number ?? undefined,
+                role: p.role,
+                isActive: p.is_active ?? true,
+                createdAt: p.created_at,
+              };
+              setSelectedStudent(studentObj);
+              setStudentSearch(`${p.first_name} ${p.last_name}`.trim());
+            }
+          }
+        } catch (e) {
+          console.warn("Could not prefill loan details:", e);
+        }
+      };
+
+      loadPreselected();
     }
   }, [route.params]);
 
@@ -313,7 +380,19 @@ export default function StaffLoanManagementScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Circulation & Loan Desk</Text>
+        <View style={styles.headerTitleRow}>
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => navigation.goBack()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="arrow-back" size={22} color={COLORS.white} />
+            </TouchableOpacity>
+          )}
+          <Text style={styles.headerTitle}>Circulation & Loan Desk</Text>
+          {navigation.canGoBack() ? <View style={{ width: 22 }} /> : null}
+        </View>
 
         {/* Tab Switcher */}
         <View style={styles.tabSwitcher}>
@@ -656,7 +735,9 @@ export default function StaffLoanManagementScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
   header: { backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: COLORS.white, marginBottom: 12 },
+  headerTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  backBtn: { padding: 4, marginRight: 8 },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: COLORS.white },
   tabSwitcher: { flexDirection: "row", backgroundColor: "rgba(0,0,0,0.15)", borderRadius: 8, padding: 3, marginBottom: 10 },
   tabBtn: { flex: 1, paddingVertical: 7, alignItems: "center", borderRadius: 6 },
   tabBtnActive: { backgroundColor: COLORS.white },
